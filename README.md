@@ -1,11 +1,3 @@
-<!--
-  GitHub strips the `style` attribute from HTML in READMEs, so the two-tone
-  "Credit Tracker" look from the banner can't be reproduced with a colored
-  <span> in the heading text below. If you'd rather have that exact look in
-  place of the plain-text heading, swap the line below for:
-  ![Applied Economics & Data Science Credit Tracker](./title-lockup.png)
--->
-
 # Applied Economics & Data Science Credit Tracker
 
 ![banner](./banner.png)
@@ -41,43 +33,38 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 
 **Planning**
 
-- An "Open in <current semester>" panel above the category board listing catalog courses offered this semester that you have not taken yet
-- A course detail preview in the add-course form (professor, exam type, language, offered semesters, skills, Stud.IP link)
-- A graduation-checklist warning for planned courses that have not been offered recently ("last offered X, whether it will reopen is uncertain")
-- A "Catalog updated" date in the footer showing when the module catalog was last synced from Stud.IP
-- A graduation path simulation in the Checklist tab: a semester-by-semester schedule for all remaining requirements (30 ECTS/semester cap), based on when courses were actually offered, with "(likely)" markers where the usual WiSe/SoSe rhythm is assumed
-- Offering-pattern hints ("Typically offered: only in WiSe") in the course detail preview
-- "Last chance this semester" warnings for missing compulsory courses that are open now but typically run only once a year
-- A "New in catalog since your last visit" note when the daily sync picks up new modules; catalog-update commits carry a changelog-style message (add/remove/update)
-- Course records automatically follow catalog renames (matched by module code on load)
-- Automatic rolling backups (last 5 versions) of your data on every change, restorable via Load > Restore auto-backup
-
-- Semester dropdown (WiSe/SoSe) that respects each module's actual offering pattern, defaulting to the current semester
-- Drag and drop between categories and semesters, with rules that mirror how credit transfers actually work (e.g. a course moved to Specialization can only be dragged back to its original category)
+- A collapsible "Open in <current semester> · Not yet taken" panel above the category board, listing catalog courses offered this semester that you have not taken yet; its chips can be dragged straight onto their own category (or Specialization, for electives) to add them as planned courses
+- The semester dropdown for a catalog course only offers the semesters that course was actually offered in on Stud.IP, so a course cannot be scheduled into a semester it does not run in
+- A course detail preview in the add-course form: professor, exam type, language, offered semesters, offering-pattern hint ("Typically offered: only in WiSe"), skills, and Stud.IP link
 - A graduation checklist: missing ECTS, missing compulsory courses, completed courses with no grade entered yet
+- Checklist warnings for planned courses that have not been offered recently ("last offered X, whether it will reopen is uncertain") and "last chance this semester" alerts for compulsory courses that are open now but typically run only once a year
+- A graduation path simulation in the Checklist tab: a semester-by-semester schedule for all remaining requirements (30 ECTS/semester cap), based on when courses were actually offered, with "(likely)" markers where the usual WiSe/SoSe rhythm is assumed
+- Drag and drop between categories and semesters, with rules that mirror how credit transfers actually work (e.g. a course moved to Specialization can only be dragged back to its original category; compulsory courses cannot be moved to Specialization)
 
 **Data**
 
 - CSV and JSON export/import for bulk operations and backups
+- Automatic rolling backups (last 5 versions) of your data on every change, restorable via Load > Restore auto-backup
 - QR code sharing for quick small transfers between your own devices (built from scratch, no external QR library)
 - A backup reminder if you haven't exported in a while
+- Course records automatically follow catalog renames (matched by module code on load), and a "New in catalog since your last visit" note appears when the daily sync picks up new modules
+- A "Catalog updated" date in the footer showing when the module catalog was last synced from Stud.IP
 - Everything is stored locally in your browser; nothing is sent anywhere except the optional cross-user visit counter
 
 ## Automatic catalog updates
 
-The module catalog lives in `catalog.csv` (one row per module: category, code, name, ECTS, compulsory flag, offering semester, language, professor, exam type, contact hours, Stud.IP link, skills) and is kept in sync with Stud.IP automatically:
+The module catalog lives in `catalog.csv` (one row per module: `category, code, name, ects, compulsory, source, offering, semesters_offered, language, professor, exam_type, contact_hours, studip_link, skills`) and is kept in sync with Stud.IP automatically:
 
 - `index.html` loads `catalog.csv` at startup and builds its module lists and course details from it, so the CSV is the single source of truth
-- `scripts/fetch_catalog.py` scrapes the public AEDS course-of-study pages on Stud.IP (no login required) for every semester from WiSe 2021/22 up to the next semester and syncs the results into `catalog.csv`, including the exact semesters each module was offered in (`semesters_offered` column): new modules are added, existing rows are updated, and rows with `source=studip` that Stud.IP no longer lists are removed (only when both semester listings were fetched successfully, so a partial scrape cannot wipe the catalog). The hand-maintained `compulsory` column always survives updates
+- `scripts/fetch_catalog.py` scrapes the public AEDS course-of-study pages on Stud.IP (no login required) for every semester from WiSe 2021/22 up to the next semester and syncs the results into `catalog.csv`, including the exact semesters each module was offered in (`semesters_offered`): new modules are added, existing rows are updated, and rows with `source=studip` that appear in no scraped semester at all are removed. Deletion is skipped entirely unless at least 6 well-populated semester listings were fetched, so a partial scrape cannot wipe the catalog. The hand-maintained `compulsory` column always survives updates
 - Rows whose `source` is anything other than `studip` (use `manual`) are never deleted or auto-removed; use this for modules you add by hand that the scraper does not see
-- When adding a catalog course in the app, the semester dropdown only offers the semesters that course was actually offered in according to Stud.IP, so a course that is not open in a given semester cannot be scheduled into it (manually typed non-catalog courses are unrestricted)
-- A GitHub Actions workflow (`.github/workflows/update-catalog.yml`) re-runs the scraper every morning and commits `catalog.csv` when it changed, so newly offered modules appear without any manual edits
+- A GitHub Actions workflow (`.github/workflows/update-catalog.yml`) re-runs the scraper every morning and commits `catalog.csv` when it changed, with a changelog-style commit message (`chore: catalog update (add wir9xx; remove inf5xx; update N modules)`), so the git history doubles as a catalog changelog
 - The CSV can also be edited by hand (e.g. to fix a professor name or add a module the scraper does not see); the scraper only overwrites fields it actually scraped fresh values for
 - If `catalog.csv` cannot be loaded (e.g. opening `index.html` directly from disk), the app falls back to a built-in snapshot of the catalog
 
 ## Tech notes
 
-- Plain React (no build tooling required to read or edit `ects-tracker.jsx`); the standalone build is produced with esbuild, bundling React, ReactDOM, and hand-rolled inline-SVG icons into one file
+- Plain React bundled with esbuild into a single `index.html` (React, ReactDOM, and hand-rolled inline-SVG icons in one file); catalog loading, the CSV parser, and the auto-backup ring live in small readable scripts in the page head
 - No `localStorage`/`sessionStorage` inside the Claude artifact context; instead uses Claude's `window.storage` API, which the standalone build shims with real `localStorage`
 - The QR code encoder is a from-scratch implementation of the relevant parts of ISO/IEC 18004 (versions 1-10, error correction level L), validated by round-tripping through an independent decoder
 
