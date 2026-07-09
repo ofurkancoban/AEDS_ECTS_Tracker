@@ -10,12 +10,21 @@
   #root { min-height: 100vh; }
 </style>
 <script>
-  const COUNTAPI_NAMESPACE = "ects-tracker-app-b7f2";
+  // Minimal localStorage-backed shim matching the artifact window.storage API
+  // for personal (per-browser) data. Shared (cross-user) storage is proxied
+  // to a free, no-signup counter service, since a plain static HTML file has
+  // no backend of its own to hold shared data. countapi.xyz (the original
+  // service) shut down in 2026; this uses the community-run replacement at
+  // countapi.mileshilliard.com instead. That service has a flat key space
+  // (no namespaces), so a unique prefix is baked into the key itself.
+  const COUNTER_KEY_PREFIX = "ects-tracker-app-b7f2-";
+  const COUNTER_BASE = "https://countapi.mileshilliard.com/api/v1";
 
   window.storage = {
     get: async (key, shared) => {
       if (shared) {
-        const res = await fetch(`https://api.countapi.xyz/get/${COUNTAPI_NAMESPACE}/${encodeURIComponent(key)}`);
+        const res = await fetch(`${COUNTER_BASE}/get/${encodeURIComponent(COUNTER_KEY_PREFIX + key)}`);
+        if (res.status === 404) return null;
         if (!res.ok) throw new Error("shared counter unavailable");
         const data = await res.json();
         return data && data.value != null ? { key, value: String(data.value), shared: true } : null;
@@ -25,7 +34,7 @@
     },
     set: async (key, value, shared) => {
       if (shared) {
-        const res = await fetch(`https://api.countapi.xyz/hit/${COUNTAPI_NAMESPACE}/${encodeURIComponent(key)}`);
+        const res = await fetch(`${COUNTER_BASE}/hit/${encodeURIComponent(COUNTER_KEY_PREFIX + key)}`);
         if (!res.ok) throw new Error("shared counter unavailable");
         const data = await res.json();
         return { key, value: String(data.value), shared: true };
@@ -167,6 +176,5 @@ react-dom/cjs/react-dom.production.min.js:
 */
 
 </script>
-
 </body>
 </html>
