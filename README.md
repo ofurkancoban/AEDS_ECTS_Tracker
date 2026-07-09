@@ -1,3 +1,11 @@
+<!--
+  GitHub strips the `style` attribute from HTML in READMEs, so the two-tone
+  "Credit Tracker" look from the banner can't be reproduced with a colored
+  <span> in the heading text below. If you'd rather have that exact look in
+  place of the plain-text heading, swap the line below for:
+  ![Applied Economics & Data Science Credit Tracker](./title-lockup.png)
+-->
+
 # Applied Economics & Data Science Credit Tracker
 
 ![banner](./banner.png)
@@ -7,6 +15,7 @@ A single-file, no-backend ECTS credit and GPA tracker built for the **Applied Ec
 [![License: MIT](https://img.shields.io/badge/license-MIT-2F6F6D.svg)](./LICENSE)
 ![No backend](https://img.shields.io/badge/backend-none-1C2333.svg)
 ![Made with React](<https://img.shields.io/badge/made%20with-React-1C2333.svg>)
+![Times used](<https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcountapi.mileshilliard.com%2Fapi%2Fv1%2Fget%2Fects-tracker-app-b7f2-ects-tracker-global-visits&query=%24.value&label=times%20opened&color=B5652D>)
 
 ---
 
@@ -42,10 +51,6 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 - QR code sharing for quick small transfers between your own devices (built from scratch, no external QR library)
 - A backup reminder if you haven't exported in a while
 - Everything is stored locally in your browser; nothing is sent anywhere except the optional cross-user visit counter
-
-## Data source and accuracy
-
-Module details (ECTS, professors, exam types, semester offerings, Stud.IP links) were transcribed from the official module handbook and Stud.IP course pages current as of mid-2026. Course offerings, staff, and requirements change between semesters. **Always verify against Stud.IP before making real academic decisions based on this tool.** This is a personal planning aid, not an official university system.
 
 ## Tech notes
 
