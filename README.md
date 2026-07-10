@@ -65,7 +65,6 @@ The module catalog lives in `catalog.csv` (one row per module: `category, code, 
 ## Tech notes
 
 - Plain React bundled with esbuild into a single `index.html` (React, ReactDOM, and hand-rolled inline-SVG icons in one file); catalog loading, the CSV parser, and the auto-backup ring live in small readable scripts in the page head
-- No `localStorage`/`sessionStorage` inside the Claude artifact context; instead uses Claude's `window.storage` API, which the standalone build shims with real `localStorage`
 - The QR code encoder is a from-scratch implementation of the relevant parts of ISO/IEC 18004 (versions 1-10, error correction level L), validated by round-tripping through an independent decoder
 
 ## License
