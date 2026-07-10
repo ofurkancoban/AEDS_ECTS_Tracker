@@ -193,7 +193,7 @@ def parse_module_page(page):
     try:
         i = lines.index("Final exam of module")
         for cand in lines[i + 1:i + 4]:
-            if cand and not cand.startswith("At the end") and cand != "Examination":
+            if cand and not cand.startswith(("At the end", "Am Ende")) and cand != "Examination":
                 info["examType"] = cand
                 break
     except ValueError:
@@ -209,8 +209,8 @@ def parse_module_page(page):
 
 CSV_FIELDS = [
     "category", "code", "name", "ects", "compulsory", "source", "offering",
-    "semesters_offered", "language", "professor", "exam_type", "contact_hours",
-    "studip_link", "skills",
+    "semesters_offered", "extra_semesters", "language", "professor",
+    "exam_type", "contact_hours", "studip_link", "skills",
 ]
 CATEGORY_ORDER = ["economics", "empirical", "datascience", "specialization", "thesis"]
 
@@ -233,9 +233,18 @@ def main():
     offered_semesters = {}
     populated_listings = 0
     for sid, label in picked:
-        page = fetch(f"{BASE}{verlauf_path}?semester={sid}")
+        # with_courses=1 = "Nur Module mit Veranstaltungen anzeigen": without it
+        # the session sometimes falls back to listing every module of the study
+        # plan in every semester, which would poison semesters_offered
+        page = fetch(f"{BASE}{verlauf_path}?semester={sid}&with_courses=1")
         rows = parse_verlauf(page)
         print(f"  {label}: {len(rows)} modules")
+        if len(rows) > 28:
+            raise RuntimeError(
+                f"{label} returned {len(rows)} modules; the with_courses filter"
+                " appears to be inactive, aborting to avoid writing bogus"
+                " semester data"
+            )
         if len(rows) >= 5:
             populated_listings += 1
         for category, code, name, mid in rows:
@@ -253,6 +262,8 @@ def main():
 
     details = {}
     for code, mid in sorted(module_ids.items()):
+        # display_language (not set_language) is what the module description
+        # route honors; German pages would break the field parsing
         url = f"{BASE}/dispatch.php/shared/modul/description/{mid}?display_language=en_GB"
         try:
             details[code] = parse_module_page(fetch(url))
