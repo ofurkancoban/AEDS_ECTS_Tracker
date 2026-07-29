@@ -1,0 +1,11 @@
+[
+  {
+    "version": "2026-07-29",
+    "items": [
+      "Added an anonymous course difficulty rating (1-5) for courses you've passed",
+      "Average difficulty and vote count are now shown when adding a course",
+      "You can change or remove your own difficulty rating at any time",
+      "Ratings are stored transparently in ratings.json in this repository"
+    ]
+  }
+]
