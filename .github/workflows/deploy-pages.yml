@@ -28,7 +28,8 @@ jobs:
           RATING_CLIENT_TOKEN: ${{ secrets.RATING_CLIENT_TOKEN }}
         run: |
           mkdir -p _site
-          cp -r . _site/
+          shopt -s extglob dotglob
+          cp -r !(_site) _site/
           rm -rf _site/.git _site/.github
           sed -i "s|__GITHUB_RATING_TOKEN__|${RATING_CLIENT_TOKEN}|g" _site/index.html
 
