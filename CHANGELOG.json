@@ -1,5 +1,14 @@
 [
   {
+    "version": "2026-07-31",
+    "items": [
+      "Added a Next semester tab with two alternative course-selection suggestions for the upcoming semester",
+      "Graduation checklist now shows clearer status ticks (done / planned but not yet completed / missing) for ECTS categories and compulsory courses",
+      "The graduation path simulation no longer schedules the thesis or new courses earlier than what you've already planned",
+      "The 'not offered anymore' warning no longer applies to compulsory courses, since they run every semester"
+    ]
+  },
+  {
     "version": "2026-07-29",
     "items": [
       "Added an anonymous course difficulty rating (1-5) for courses you've passed",

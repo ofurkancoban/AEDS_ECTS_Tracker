@@ -36,10 +36,17 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 - A collapsible "Open in <current semester> · Not yet taken" panel above the category board, listing catalog courses offered this semester that you have not taken yet; its chips can be dragged straight onto their own category (or Specialization, for electives) to add them as planned courses
 - The semester dropdown for a catalog course only offers the semesters that course was actually offered in on Stud.IP, so a course cannot be scheduled into a semester it does not run in
 - A course detail preview in the add-course form: professor, exam type, language, offered semesters, offering-pattern hint ("Typically offered: only in WiSe"), skills, and Stud.IP link
-- A graduation checklist: missing ECTS, missing compulsory courses, completed courses with no grade entered yet
-- Checklist warnings for planned courses that have not been offered recently ("last offered X, whether it will reopen is uncertain") and "last chance this semester" alerts for compulsory courses that are open now but typically run only once a year
-- A graduation path simulation in the Checklist tab: a semester-by-semester schedule for all remaining requirements (30 ECTS/semester cap), based on when courses were actually offered, with "(likely)" markers where the usual WiSe/SoSe rhythm is assumed
+- A graduation checklist with per-category status ticks: ✓ for categories fully completed with a grade, ◐ for categories whose ECTS gap is covered but still include planned/in-progress courses, ○ for categories genuinely short; the four compulsory courses are listed individually with the same done/planned/missing distinction
+- Checklist warnings for elective courses that have not been offered recently ("last offered X, whether it will reopen is uncertain" — compulsory courses are excluded from this warning, since they run every semester by definition) and "last chance this semester" alerts for compulsory courses that are open now but typically run only once a year
+- A graduation path simulation in the Checklist tab: a semester-by-semester schedule for all remaining requirements (30 ECTS/semester cap), based on when courses were actually offered, with "(likely)" markers where the usual WiSe/SoSe rhythm is assumed; it never schedules anything (including the thesis) earlier than the last semester you already have planned or in-progress courses in
+- A dedicated "Next semester" tab that proposes two alternative course selections for the upcoming semester specifically, starting from whatever you've already planned for it and filling the rest from what's typically offered and what you've already passed
 - Drag and drop between categories and semesters, with rules that mirror how credit transfers actually work (e.g. a course moved to Specialization can only be dragged back to its original category; compulsory courses cannot be moved to Specialization)
+
+**Course ratings**
+
+- An anonymous, crowd-sourced course difficulty rating (1-5) shown when adding a course, alongside the average rating and vote count
+- You can add, change, or remove your own rating at any time; votes are tracked per anonymous device, not per person, so re-rating a course just updates your existing vote instead of adding a duplicate
+- Ratings are collected via a lightweight serverless pipeline (a GitHub Actions workflow appends each vote to a log and republishes the aggregate) and stored transparently in `ratings.json` in this repository, so anyone can inspect how the numbers are produced
 
 **Data**
 
