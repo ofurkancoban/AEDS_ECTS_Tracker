@@ -31,6 +31,7 @@ SECTION_TO_CATEGORY = {
     "Specialization": "specialization",
     "Specialisation": "specialization",
     "Masterabschlussmodul": "thesis",
+    "Further modules": "further",
 }
 
 USER_AGENT = "AEDS-ECTS-Tracker catalog updater (github.com/ofurkancoban)"
@@ -212,7 +213,7 @@ CSV_FIELDS = [
     "semesters_offered", "extra_semesters", "language", "professor",
     "exam_type", "contact_hours", "studip_link", "skills",
 ]
-CATEGORY_ORDER = ["economics", "empirical", "datascience", "specialization", "thesis"]
+CATEGORY_ORDER = ["economics", "empirical", "datascience", "specialization", "thesis", "further"]
 
 
 def main():
