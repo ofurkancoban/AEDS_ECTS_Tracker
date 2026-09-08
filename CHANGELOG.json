@@ -1,5 +1,12 @@
 [
   {
+    "version": "2026-09-08",
+    "items": [
+      "Added a Further modules category, scraped from the Stud.IP 'Further modules' section that was previously skipped",
+      "Further modules ECTS now count toward your completed total (the 120 ECTS degree requirement itself is unchanged)"
+    ]
+  },
+  {
     "version": "2026-07-31",
     "items": [
       "Added a Next semester tab with two alternative course-selection suggestions for the upcoming semester",
