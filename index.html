@@ -10,13 +10,13 @@
   #root { min-height: 100vh; }
 </style>
 <script>
-  const COUNTER_KEY_PREFIX = "ects-tracker-app-b7f2-";
-  const COUNTER_BASE = "https://countapi.mileshilliard.com/api/v1";
+  const COUNTER_NAMESPACE = "ects-tracker-app-b7f2";
+  const COUNTER_BASE = "https://abacus.jasoncameron.dev";
 
   window.storage = {
     get: async (key, shared) => {
       if (shared) {
-        const res = await fetch(`${COUNTER_BASE}/get/${encodeURIComponent(COUNTER_KEY_PREFIX + key)}`);
+        const res = await fetch(`${COUNTER_BASE}/get/${encodeURIComponent(COUNTER_NAMESPACE)}/${encodeURIComponent(key)}`);
         if (res.status === 404) return null;
         if (!res.ok) throw new Error("shared counter unavailable");
         const data = await res.json();
@@ -27,7 +27,7 @@
     },
     set: async (key, value, shared) => {
       if (shared) {
-        const res = await fetch(`${COUNTER_BASE}/hit/${encodeURIComponent(COUNTER_KEY_PREFIX + key)}`);
+        const res = await fetch(`${COUNTER_BASE}/hit/${encodeURIComponent(COUNTER_NAMESPACE)}/${encodeURIComponent(key)}`);
         if (!res.ok) throw new Error("shared counter unavailable");
         const data = await res.json();
         return { key, value: String(data.value), shared: true };

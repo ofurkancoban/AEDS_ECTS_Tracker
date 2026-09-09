@@ -7,7 +7,7 @@ A single-file, no-backend ECTS credit and GPA tracker built for the **Applied Ec
 [![License: MIT](https://img.shields.io/badge/license-MIT-2F6F6D.svg)](./LICENSE)
 ![No backend](https://img.shields.io/badge/backend-none-1C2333.svg)
 ![Made with React](<https://img.shields.io/badge/made%20with-React-1C2333.svg>)
-![Times used](<https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcountapi.mileshilliard.com%2Fapi%2Fv1%2Fget%2Fects-tracker-app-b7f2-ects-tracker-global-visits&query=%24.value&label=times%20opened&color=B5652D>)
+![Times used](<https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fabacus.jasoncameron.dev%2Fget%2Fects-tracker-app-b7f2%2Fects-tracker-global-visits&query=%24.value&label=times%20opened&color=B5652D>)
 
 ---
 
