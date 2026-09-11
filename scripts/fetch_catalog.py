@@ -253,7 +253,9 @@ def main():
             # newer semesters overwrite so names and page ids stay current
             lists[category][code] = name
             module_ids[code] = mid
-            offered_semesters.setdefault(code, []).append(label)
+            labels = offered_semesters.setdefault(code, [])
+            if label not in labels:
+                labels.append(label)
         time.sleep(1)
 
     offered_in = {
