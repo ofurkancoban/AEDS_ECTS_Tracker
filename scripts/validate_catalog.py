@@ -30,7 +30,7 @@ FALLBACK_VARS = {
     "empirical": "Js",
     "datascience": "Ks",
     "specialization": "Pf",
-    "further": "Ws",
+    "further": "Ff9",
 }
 
 SEMESTER_RE = re.compile(r"^(WiSe\d{2}/\d{2}|SoSe\d{2})$")

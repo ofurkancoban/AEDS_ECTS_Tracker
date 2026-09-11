@@ -15,12 +15,17 @@ import re
 import sys
 from pathlib import Path
 
+# "further" is intentionally NOT the minifier's original "Ws" - that name
+# collides with an unrelated lucide icon component also called Ws in this
+# build, and the array assignment silently clobbers the icon reference,
+# corrupting every "remove course" button (React error #130). Renamed to
+# Ff9 to break the collision; keep it that way on any future rebuild.
 FALLBACK_VARS = {
     "economics": "Rs",
     "empirical": "Js",
     "datascience": "Ks",
     "specialization": "Pf",
-    "further": "Ws",
+    "further": "Ff9",
 }
 
 
