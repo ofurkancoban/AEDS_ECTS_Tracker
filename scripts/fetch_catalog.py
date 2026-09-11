@@ -17,6 +17,7 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import date
 
@@ -42,10 +43,20 @@ _opener = urllib.request.build_opener(
 )
 
 
-def fetch(url):
+def fetch(url, attempts=3, backoff=5):
+    """GET url, retrying transient network errors with linear backoff.
+    Stud.IP occasionally times out or resets a connection under load; a
+    single such blip shouldn't fail the whole daily scrape."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with _opener.open(req, timeout=60) as res:
-        return res.read().decode("utf-8", errors="replace")
+    for attempt in range(1, attempts + 1):
+        try:
+            with _opener.open(req, timeout=60) as res:
+                return res.read().decode("utf-8", errors="replace")
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            if attempt == attempts:
+                raise
+            print(f"  fetch attempt {attempt}/{attempts} failed for {url}: {exc}", file=sys.stderr)
+            time.sleep(backoff * attempt)
 
 
 def find_semesters(studiengang_html):
