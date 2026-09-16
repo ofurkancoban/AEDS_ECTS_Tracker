@@ -4,8 +4,12 @@
     "sum": 4
   },
   "inf530": {
-    "count": 2,
-    "sum": 3
+    "count": 3,
+    "sum": 4
+  },
+  "inf535": {
+    "count": 1,
+    "sum": 2
   },
   "inf604": {
     "count": 2,
@@ -16,8 +20,8 @@
     "sum": 6
   },
   "inf962": {
-    "count": 3,
-    "sum": 15
+    "count": 4,
+    "sum": 18
   },
   "wir821": {
     "count": 3,
@@ -27,8 +31,12 @@
     "count": 2,
     "sum": 6
   },
+  "wir874": {
+    "count": 1,
+    "sum": 2
+  },
   "wir875": {
-    "count": 2,
-    "sum": 4
+    "count": 3,
+    "sum": 5
   }
 }
