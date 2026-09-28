@@ -56,7 +56,21 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 - A backup reminder if you haven't exported in a while
 - Course records automatically follow catalog renames (matched by module code on load), and a "New in catalog since your last visit" note appears when the daily sync picks up new modules
 - A "Catalog updated" date in the footer showing when the module catalog was last synced from Stud.IP
-- Everything is stored locally in your browser; nothing is sent anywhere except the optional cross-user visit counter
+- Everything is stored locally in your browser; nothing is sent anywhere except the optional cross-user visit counter and, if you choose to use it, the AEDS Assistant chat below
+
+**Sync from StudIP**
+
+- Load > Sync from StudIP walks you through copying your StuMS achievements page (log in, click "Expand all", select all and copy — no scripts required, though an optional bookmarklet can do that copy step for you) and pasting it in
+- Finished modules are matched to your existing courses by their catalog module number, not by title text (StuMS truncates long titles, so a text match alone would be unreliable) and their grade is updated in place
+- Modules you haven't added yet are proposed as new courses straight from the catalog (category, ECTS, professor, exam type filled in automatically); you must pick a semester (limited to the current one or earlier) before they can be added
+- Nothing is sent anywhere — the pasted text is parsed entirely in your browser
+
+**AEDS Assistant**
+
+- A chat bubble in the bottom-right corner answers questions about the programme (admission, deadlines, courses, exam rules) using [AEDS_RAG](https://aeds-rag-assistant.ofurkan.co), a separate retrieval-augmented chatbot built for the same programme
+- Anonymous by design: a guest session is created on first use and kept in your browser, with no sign-up; the conversation persists across reloads
+- Full-screen on mobile, a floating panel on desktop
+- This is the one feature that talks to an external server — your question and the assistant's answer go to AEDS_RAG's API to be answered; nothing else in the tracker does this
 
 ## Automatic catalog updates
 

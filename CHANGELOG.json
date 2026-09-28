@@ -1,5 +1,12 @@
 [
   {
+    "version": "2026-09-28",
+    "items": [
+      "Added Load > Sync from StudIP: paste your StuMS achievements page to update grades on existing courses and add missing ones straight from the catalog, matched by module number (no login handling, nothing sent anywhere)",
+      "Added an AEDS Assistant chat bubble (bottom-right) that answers programme questions via a separate RAG chatbot; anonymous, and the only feature that talks to an external server"
+    ]
+  },
+  {
     "version": "2026-09-08",
     "items": [
       "Added a Further modules category, scraped from the Stud.IP 'Further modules' section that was previously skipped",
