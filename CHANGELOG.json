@@ -1,5 +1,13 @@
 [
   {
+    "version": "2026-09-30",
+    "items": [
+      "Added a 'How it works' button next to Print that opens a modal explaining the tracker, loading real data, backups, and the AEDS Assistant",
+      "The 'Open in' default now switches to the upcoming semester about a month before the current one actually ends, instead of waiting for its first day",
+      "AEDS Assistant's course-progress context now lets its next-semester recommendations reflect what you've really completed, respects courses you count toward a different category than the catalog's default, and keeps suggesting planned (not-yet-taken) compulsory courses instead of hiding them"
+    ]
+  },
+  {
     "version": "2026-09-28",
     "items": [
       "Added Load > Sync from StudIP: paste your StuMS achievements page to update grades on existing courses and add missing ones straight from the catalog, matched by module number (no login handling, nothing sent anywhere)",
