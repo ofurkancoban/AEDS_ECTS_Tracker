@@ -686,3 +686,27 @@ describe("progress headline", () => {
     expect(status()).toMatch(/^30 of them are already running or planned\. Not in your plan yet: Economics 36 ECTS/);
   });
 });
+
+describe("planning risks", () => {
+  it("warns only when the credits not planned can't fit before graduation", async () => {
+    seed(sample(), { graduationDate: "2099-01-01" });
+    await renderApp();
+    expect(screen.queryByText(/still need a place/)).toBeNull();
+    cleanup();
+    const nextYear = new Date().getFullYear() + 1;
+    seed(sample(), { graduationDate: `${nextYear}-09-30` }); // one semester after the running one
+    await renderApp();
+    const panel = screen.getByRole("region", { name: "Needs attention" });
+    const first = within(panel).getAllByRole("listitem")[0];
+    expect(first.textContent).toMatch(/still need a place, but .* have room for only \d+ ECTS at 30 per semester/);
+    expect(within(first).getByRole("button", { name: "Open planner" })).toBeTruthy();
+  });
+
+  it("shows 'to plan' as information, not a warning", async () => {
+    seed(sample());
+    await renderApp();
+    const tag = screen.getAllByText(/^\d+ to plan$/)[0];
+    expect(tag.className).toContain("text-muted");
+    expect(tag.className).not.toContain("text-warn");
+  });
+});

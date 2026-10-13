@@ -26,6 +26,7 @@ import { Bar, Button, CategoryDot, SectionTitle, cx } from "../components/ui";
 import { labelForCode } from "../lib/catalog";
 import { LECTURE_WEEKS, MAX_ECTS_PER_SEMESTER, TOTAL_REQUIRED, categoryById } from "../lib/constants";
 import { overflowNotes } from "../lib/overflow";
+import { capacityRisk, compulsoryRisks, unplannedLastChance } from "../lib/risks";
 import { lastChanceCourses, notOfferedAnymore } from "../lib/planning";
 import { compareSemesters, planningSemester } from "../lib/semesters";
 import { isFail } from "../lib/stats";
@@ -44,7 +45,10 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
   const termEcts = termCourses.reduce((a, c) => a + c.ects, 0);
   const termHours = termCourses.reduce((a, c) => a + (c.workloadHours || c.ects * 30), 0) / LECTURE_WEEKS;
 
-  const lastChance = useMemo(() => lastChanceCourses(stats, catalog), [stats, catalog]);
+  // Only modules that aren't in the plan yet: a planned compulsory course needs no reminder.
+  const lastChance = useMemo(() => unplannedLastChance(courses, catalog, lastChanceCourses(stats, catalog)), [courses, stats, catalog]);
+  const capacity = useMemo(() => capacityRisk(courses, stats, state.graduationDate), [courses, stats, state.graduationDate]);
+  const compulsoryRisk = useMemo(() => compulsoryRisks(courses, catalog, state.graduationDate), [courses, catalog, state.graduationDate]);
   const gone = useMemo(() => notOfferedAnymore(courses, catalog), [courses, catalog]);
   const overflow = useMemo(() => overflowNotes(courses, stats, catalog), [courses, stats, catalog]);
   const overloaded = useMemo(() => {
@@ -237,13 +241,51 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
             ),
             onDismiss: dismissBackupReminder,
           },
+          capacity && {
+            key: "capacity",
+            tone: "danger" as const,
+            icon: <CalendarClock size={16} />,
+            text:
+              capacity.semesters.length === 0 ? (
+                <>
+                  Your graduation date is this semester, but <b className="num">{capacity.notPlanned}</b> ECTS you still need aren't planned yet.
+                </>
+              ) : (
+                <>
+                  To graduate by {new Date(state.graduationDate).toLocaleDateString()}, <b className="num">{capacity.notPlanned}</b> ECTS still need a place, but{" "}
+                  {capacity.semesters.length === 1 ? "the semester left" : `the ${capacity.semesters.length} semesters left`} ({capacity.semesters.join(", ")}) have room for only{" "}
+                  <b className="num">{capacity.room}</b> ECTS at {MAX_ECTS_PER_SEMESTER} per semester.
+                </>
+              ),
+            action: (
+              <Button size="sm" variant="soft" onClick={() => setView("planner")}>
+                Open planner
+              </Button>
+            ),
+          },
+          ...compulsoryRisk.map((r) => ({
+            key: "cr-" + r.code,
+            tone: r.lastBeforeGraduation ? ("danger" as const) : ("warn" as const),
+            icon: <AlarmClock size={16} />,
+            text: (
+              <>
+                <b>{r.label}</b> is compulsory and not in your plan yet. It runs in {r.semester}, usually only in the {r.pattern === "WiSe" ? "winter" : "summer"} term
+                {r.lastBeforeGraduation ? ", the last run before your graduation date." : "."}
+              </>
+            ),
+            action: (
+              <Button size="sm" variant="soft" onClick={() => openAdd({ name: r.label, category: catalog.byCode.get(r.code)?.category, semester: r.semester })}>
+                Add to {r.semester}
+              </Button>
+            ),
+          })),
           ...lastChance.map((l) => ({
             key: "lc-" + l.label,
             tone: "danger" as const,
             icon: <AlarmClock size={16} />,
             text: (
               <>
-                <b>{l.label}</b> is compulsory and runs this semester, but usually only in the {l.pattern === "WiSe" ? "winter" : "summer"} term.
+                <b>{l.label}</b> is compulsory, not in your plan yet, and runs this semester, usually only in the {l.pattern === "WiSe" ? "winter" : "summer"} term.
               </>
             ),
           })),
@@ -553,7 +595,7 @@ function CategoryCard({ cat }: { cat: CategoryStats }) {
           <div className="mt-3 flex items-baseline gap-1">
             <span className="num text-display leading-none font-semibold">{cat.completed}</span>
             <span className="num text-body-sm text-muted">/ {req} ECTS</span>
-            {cat.remaining > 0 && <span className="ml-auto text-meta text-warn">{cat.remaining} to plan</span>}
+            {cat.remaining > 0 && <span className="ml-auto text-meta text-muted">{cat.remaining} to plan</span>}
           </div>
           <div className="mt-3">
             <Bar
