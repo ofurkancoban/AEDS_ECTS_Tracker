@@ -62,6 +62,18 @@ describe("nextSemesterPlans", () => {
     expect(plan.optionA.some((i) => i.already && codeOf(i.label) === "wir874")).toBe(true);
     [plan.optionA, plan.optionB].forEach((o) => expect(o.reduce((a, i) => a + i.ects, 0)).toBeLessThanOrEqual(MAX_ECTS_PER_SEMESTER));
   });
+
+  it("leaves out courses planned for the running semester or none, without suggesting them again", () => {
+    // wir874 runs only in winter: planned for this winter, it must not appear under next summer.
+    const courses = [...sample(), course("wir874", "economics", "WiSe26/27", "planned"), course("mam", "thesis", "Unscheduled", "planned")];
+    const plan = nextSemesterPlans(courses, computeStats(courses, cat, STATS_OPTS), cat)!;
+    expect(plan.semester).toBe("SoSe27");
+    for (const o of [plan.optionA, plan.optionB]) {
+      expect(o.some((i) => i.already)).toBe(false);
+      expect(o.some((i) => ["wir874", "mam"].includes(codeOf(i.label) || ""))).toBe(false);
+      expect(o.reduce((a, i) => a + i.ects, 0)).toBeLessThanOrEqual(MAX_ECTS_PER_SEMESTER);
+    }
+  });
 });
 
 describe("openInSemester / lastChanceCourses", () => {

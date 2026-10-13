@@ -189,13 +189,12 @@ export function nextSemesterPlans(courses: Course[], stats: Stats, cat: Catalog)
   const taken = takenCodes(courses, cat);
   const rem = remainingByCategory(stats);
   const missing = missingCompulsoryCodes(stats, taken);
-  const labelIdx = ds.indexOf(label);
-  const already = courses.filter((c) => {
-    if (c.hypothetical || c.status !== "planned") return false;
-    if (c.semester === label || c.semester === "Unscheduled") return true;
-    const i = ds.indexOf(c.semester);
-    return i >= 0 && i <= labelIdx;
-  });
+  // Only what is planned for that very semester fills it. Courses planned for
+  // the running semester, an earlier one or no semester at all are not part of
+  // it (they used to show up here, e.g. a winter-only module planned for this
+  // winter listed under next summer); they still count as taken, so they are
+  // never suggested again.
+  const already = courses.filter((c) => !c.hypothetical && c.status === "planned" && c.semester === label);
   const alreadyEcts = already.reduce((a, c) => a + (c.ects || 0), 0);
   const alreadyItems: PlanItem[] = already.map((c) => {
     const rc = resolveCode(c.name, cat) || codeOf(c.name);
