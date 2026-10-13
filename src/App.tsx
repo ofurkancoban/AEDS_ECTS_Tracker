@@ -6,6 +6,7 @@ import {
   Download,
   FileJson,
   FileSpreadsheet,
+  HardDrive,
   Gift,
   LayoutDashboard,
   Library,
@@ -19,6 +20,7 @@ import {
   Printer,
   QrCode,
   RefreshCw,
+  Share2,
   Route,
   Smartphone,
   Sparkles,
@@ -34,6 +36,8 @@ import { AppearanceModal } from "./components/Appearance";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Logo } from "./components/Logo";
 import { Celebration } from "./components/Celebration";
+import { FileBackupIndicator, FileBackupModal, useFileBackup } from "./components/FileBackup";
+import { canShareFiles } from "./lib/fileBackup";
 import { MoveSheet } from "./components/MoveSheet";
 import { ChangelogModal, HowItWorksModal, ShareModal, useChangelog, useDataActions, useQrImport } from "./components/DataActions";
 import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, Toasts, cx } from "./components/ui";
@@ -85,6 +89,8 @@ function Shell() {
   const [howOpen, setHowOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [fileBackupOpen, setFileBackupOpen] = useState(false);
+  const fileBackup = useFileBackup();
   const [logOpen, setLogOpen] = useState(false);
   const [visits, setVisits] = useState<number | null>(null);
   const [installEvt, setInstallEvt] = useState<InstallPromptEvent | null>(null);
@@ -181,6 +187,26 @@ function Shell() {
             >
               Download JSON backup
             </MenuItem>
+            <MenuItem
+              icon={<HardDrive size={16} />}
+              hint={
+                fileBackup.status === "active"
+                  ? `On · ${fileBackup.fileName}`
+                  : fileBackup.status === "unsupported"
+                    ? "Chrome or Edge on a computer"
+                    : fileBackup.status === "off"
+                      ? "Keep a file updated after every change"
+                      : "Needs attention"
+              }
+              onClick={run(() => setFileBackupOpen(true))}
+            >
+              Automatic file backup
+            </MenuItem>
+            {canShareFiles() && (
+              <MenuItem icon={<Share2 size={16} />} hint="Share sheet, e.g. Save to Files / iCloud" onClick={run(data.shareJson)}>
+                Save backup to Files
+              </MenuItem>
+            )}
             <MenuItem icon={<FileSpreadsheet size={16} />} onClick={run(data.exportCsv)}>
               Export CSV
             </MenuItem>
@@ -267,6 +293,7 @@ function Shell() {
             <p className="truncate text-meta text-muted">{current.blurb}</p>
           </div>
           <div className="flex-1 lg:hidden" />
+          <FileBackupIndicator backup={fileBackup} onOpen={() => setFileBackupOpen(true)} />
           <div className="flex items-center">
             <IconButton label="Undo (Ctrl/Cmd+Z)" onClick={undo} disabled={!undoCount} className="disabled:pointer-events-none disabled:opacity-30">
               <Undo2 size={17} />
@@ -349,7 +376,7 @@ function Shell() {
 
         <Suspense fallback={<div className="py-20 text-center text-body-sm text-faint">Loading…</div>}>
         <div key={view} className="rise">
-          {view === "overview" && <Overview onBackup={data.exportJson} onImport={data.importCsv} />}
+          {view === "overview" && <Overview onBackup={data.quickBackup} onImport={data.importCsv} />}
           {view === "courses" && <Courses />}
           {view === "timeline" && <Timeline />}
           {view === "planner" && <Planner />}
@@ -439,6 +466,7 @@ function Shell() {
         </div>
       </Modal>
       <AppearanceModal open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
+      <FileBackupModal open={fileBackupOpen} onClose={() => setFileBackupOpen(false)} backup={fileBackup} onDownload={data.exportJson} onShare={data.shareJson} />
 
       {data.fileInputs}
       <AddCourseDialog />

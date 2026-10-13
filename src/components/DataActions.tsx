@@ -5,6 +5,7 @@ import { coursesFromCsv, coursesToCsv, decodeShare, encodeShare, shareUrl } from
 import { encodeQR } from "../lib/qr";
 import { graduationPath } from "../lib/planning";
 import { buildReport } from "../lib/report";
+import { canShareFiles, shareBackup } from "../lib/fileBackup";
 import { sanitizeCourses } from "../lib/sanitize";
 import { downloadFile, listAutoBackups, type AutoBackup } from "../lib/storage";
 import type { Course } from "../lib/types";
@@ -15,6 +16,8 @@ import { Button, Modal } from "./ui";
 export interface DataActions {
   exportCsv: () => void;
   exportJson: () => void;
+  shareJson: () => void;
+  quickBackup: () => void;
   importCsv: () => void;
   importJson: () => void;
   restoreAuto: () => void;
@@ -53,6 +56,25 @@ export function useDataActions(): DataActions {
     patch({ lastBackupAt: new Date().toISOString() });
     toast({ message: "Backup downloaded", tone: "success" });
   }, [courses, patch, toast]);
+
+  // One-tap backup where files can be shared (iPhone: "Save to Files" -> iCloud Drive).
+  const shareJson = useCallback(async () => {
+    try {
+      if ((await shareBackup(courses)) === "shared") {
+        patch({ lastBackupAt: new Date().toISOString() });
+        toast({ message: "Backup saved", tone: "success" });
+      }
+    } catch {
+      exportJson();
+    }
+  }, [courses, patch, toast, exportJson]);
+
+  /** The quickest backup for this device: share sheet on touch devices that support it, else a download. */
+  const quickBackup = useCallback(() => {
+    const touch = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+    if (touch && canShareFiles()) shareJson();
+    else exportJson();
+  }, [shareJson, exportJson]);
 
   const readFile = (input: HTMLInputElement, cb: (text: string) => void) => {
     const f = input.files && input.files[0];
@@ -176,6 +198,8 @@ export function useDataActions(): DataActions {
   return {
     exportCsv,
     exportJson,
+    shareJson,
+    quickBackup,
     importCsv: () => csvRef.current?.click(),
     importJson: () => jsonRef.current?.click(),
     restoreAuto,

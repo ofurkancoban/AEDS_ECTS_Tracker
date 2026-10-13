@@ -26,7 +26,8 @@
       "Timeline gets a semester strip to jump between terms, a 'today' marker and a one-click way to hide past semesters",
       "Smoother feel: animated progress, soft transitions between views (off when your system asks for reduced motion) and a small celebration when you meet every requirement",
       "The logo and browser tab icon follow your colour palette, phones show more content at the top, and Appearance has a new Compact density option",
-      "Better accessibility: higher text contrast for small and secondary text in every palette, dialogs now block the page behind them for keyboard and screen-reader users, and the closed assistant panel can no longer be reached with Tab"
+      "Better accessibility: higher text contrast for small and secondary text in every palette, dialogs now block the page behind them for keyboard and screen-reader users, and the closed assistant panel can no longer be reached with Tab",
+      "Automatic file backup (Chrome and Edge on a computer): choose a file once, for example in your iCloud Drive, OneDrive or Dropbox folder, and it is updated a few seconds after every change. On iPhone, 'Save backup to Files' puts a copy in iCloud Drive in one tap"
     ]
   },
   {

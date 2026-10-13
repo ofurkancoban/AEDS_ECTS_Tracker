@@ -65,6 +65,7 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 **Data**
 
 - CSV and JSON export/import for bulk operations and backups
+- Automatic file backup in Chrome and Edge on a computer (File System Access API): pick a file once and it is rewritten a few seconds after every change; an empty list never silently replaces a backup that still has courses. Elsewhere, "Save backup to Files" uses the share sheet (on iPhone: Save to Files / iCloud Drive)
 - Automatic rolling backups (last 5 versions) of your data on every change, restorable via Data > Restore automatic backup
 - QR code sharing for quick small transfers between your own devices (built from scratch, no external QR library)
 - A backup reminder if you haven't exported in a while

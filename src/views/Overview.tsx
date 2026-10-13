@@ -212,7 +212,7 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
                 : `Last backup was ${stats.backupDaysAgo} days ago.`,
             action: (
               <Button size="sm" variant="soft" onClick={onBackup}>
-                Download backup
+                Back up now
               </Button>
             ),
             onDismiss: dismissBackupReminder,
