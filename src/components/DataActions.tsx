@@ -1,8 +1,10 @@
 import { Copy, Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CATEGORIES, CATEGORY_IDS, STATUS_LABEL, TOTAL_REQUIRED } from "../lib/constants";
-import { coursesFromCsv, coursesToCsv, decodeShare, encodeShare, escapeHtml, shareUrl } from "../lib/io";
+import { CATEGORIES, CATEGORY_IDS, TOTAL_REQUIRED } from "../lib/constants";
+import { coursesFromCsv, coursesToCsv, decodeShare, encodeShare, shareUrl } from "../lib/io";
 import { encodeQR } from "../lib/qr";
+import { graduationPath } from "../lib/planning";
+import { buildReport } from "../lib/report";
 import { sanitizeCourses } from "../lib/sanitize";
 import { downloadFile, listAutoBackups, type AutoBackup } from "../lib/storage";
 import type { Course } from "../lib/types";
@@ -33,7 +35,7 @@ interface ShareState {
 }
 
 export function useDataActions(): DataActions {
-  const { courses, setCourses, patch, stats, toast, confirm, setStudipOpen, undo } = useTracker();
+  const { courses, setCourses, patch, stats, toast, confirm, setStudipOpen, undo, state, catalog } = useTracker();
   const csvRef = useRef<HTMLInputElement>(null);
   const jsonRef = useRef<HTMLInputElement>(null);
   const [shareState, setShareState] = useState<ShareState | null>(null);
@@ -142,32 +144,13 @@ export function useDataActions(): DataActions {
       toast({ message: "Please allow popups for this site, then try Print again.", tone: "warn" });
       return;
     }
-    const sections = stats.categories
-      .map((cat) => {
-        const rows = cat.items
-          .filter((c) => !c.hypothetical)
-          .map(
-            (c) =>
-              `<tr><td>${escapeHtml(c.name)}</td><td>${c.ects}</td><td>${escapeHtml(c.semester)}</td><td>${STATUS_LABEL[c.status]}</td><td>${
-                c.status === "completed" ? escapeHtml(c.grade || "") : ""
-              }</td></tr>`,
-          )
-          .join("");
-        return `<h2>${escapeHtml(cat.name)} (${cat.completed}/${cat.required} ECTS)</h2><table><thead><tr><th>Course</th><th>ECTS</th><th>Semester</th><th>Status</th><th>Grade</th></tr></thead><tbody>${
-          rows || '<tr><td colspan="5">No courses added</td></tr>'
-        }</tbody></table>`;
-      })
-      .join("");
+    const html = buildReport({ state, stats, catalog, path: graduationPath(courses, stats, catalog) });
     w.document.open();
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Applied Economics and Data Science Credit Tracker</title>
-<style>body{font-family:Georgia,serif;color:#1C2333;padding:24px}h1{font-size:20px;margin-bottom:4px}h2{font-size:15px;margin-top:24px;margin-bottom:6px;border-bottom:1px solid #ccc;padding-bottom:4px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid #ddd;text-align:left;padding:4px 6px}.summary{font-size:13px;margin-top:4px;color:#444}</style>
-</head><body><h1>Applied Economics and Data Science Credit Tracker</h1><div class="summary">Total: ${stats.completed + stats.inProgress} / ${TOTAL_REQUIRED} ECTS accounted for${
-      stats.gpa ? `, GPA ${stats.gpa}` : ""
-    }</div>${sections}</body></html>`);
+    w.document.write(html);
     w.document.close();
     w.focus();
-    window.setTimeout(() => w.print(), 300);
-  }, [stats, toast]);
+    window.setTimeout(() => w.print(), 400);
+  }, [state, stats, catalog, courses, toast]);
 
   const reset = useCallback(async () => {
     const ok = await confirm({

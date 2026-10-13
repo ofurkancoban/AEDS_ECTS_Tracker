@@ -1,0 +1,51 @@
+{
+  "thread_id": "sample-thread",
+  "answer": "### Retaking a failed exam\n\nYou can retake a failed module examination **up to twice** [1].\n\n### Free attempts to improve grades\n\nWithin the standard period of study, examinations passed at the first possible date in **two modules** of the entire degree programme can, upon request, be retaken once within one year as a free attempt to improve grades - the best result counts each time [1]. This is separate from the resit allowance.\n\n### Important limits\n\n- No entitlement to a free attempt to improve grades in the case of resits [1].\n- If no free-attempt date is offered in that year, the next possible date will apply [1].",
+  "sources": [
+    {
+      "source_id": "MPO_AEDS_2026_EN",
+      "page": 5,
+      "url": "https://elearning.uni-oldenburg.de/sendfile.php?force_download=1&type=0&file_id=f8a53ffccbe26177a3e410b4fbeb3c4b&file_name=MPO_AppEconDataSc_engl_2026.pdf&cancel_login=1",
+      "expired_since": null
+    },
+    {
+      "source_id": "MPO_AEDS_2026_EN",
+      "page": 8,
+      "url": "https://elearning.uni-oldenburg.de/sendfile.php?force_download=1&type=0&file_id=f8a53ffccbe26177a3e410b4fbeb3c4b&file_name=MPO_AppEconDataSc_engl_2026.pdf&cancel_login=1",
+      "expired_since": null
+    },
+    {
+      "source_id": "MPO_AEDS_2026_EN",
+      "page": 11,
+      "url": "https://elearning.uni-oldenburg.de/sendfile.php?force_download=1&type=0&file_id=f8a53ffccbe26177a3e410b4fbeb3c4b&file_name=MPO_AppEconDataSc_engl_2026.pdf&cancel_login=1",
+      "expired_since": null
+    }
+  ],
+  "retrieval": [
+    {
+      "source_id": "MPO_AEDS_2026_EN",
+      "snippet": "[Examination regulations 2026 (Applied Economics and Data Science) | Section 8 Resitting examination components, free attempt]\n(1) Failed module examinations can be retaken twice. At the latest, the first resit takes place in the \nsemester following the semester in which the examination was first offered. The free -attempt regulations \ndo not apply.  \n \n(2) Within the standard period of study, exa",
+      "rerank_score": 0.9950166344642639,
+      "expired_since": null
+    },
+    {
+      "source_id": "MPO_AEDS_2026_EN",
+      "snippet": "[Examination regulations 2026 (Applied Economics and Data Science) | Section 15 Absence, withdrawal,]\ncerned. In that case, the examination component in question will be graded as a fail. Before a decision \nis taken by the Examining Board in accordance with sentences 1 and 2, the student will have the oppor-\ntunity to be heard. The student will continue the examination until the Examining Board ha",
+      "rerank_score": 0.018325570970773697,
+      "expired_since": null
+    },
+    {
+      "source_id": "MPO_AEDS_2026_EN",
+      "snippet": "[Examination regulations 2026 (Applied Economics and Data Science) | Section 15 Absence, withdrawal,]\nfraud, infringement of regulations  \n \n(1) An examination shall be deemed failed if the student misses a binding examination date without a \nvalid reason or if the student aborts an examination that they have started without a valid reason. The \nsame shall apply if a written examination is not tak",
+      "rerank_score": 0.006050154101103544,
+      "expired_since": null
+    },
+    {
+      "source_id": "MPO_AEDS_2026_EN",
+      "snippet": "[Examination regulations 2026 (Applied Economics and Data Science) | Section 20 Invalidity of the Master’s examination]\n(1) If a student has committed fraud during an examination and this does not become known until after \na transcript has been issued, the Examining Board may adjust the grades retroactively for the examina-\ntions concerned and declare the examination totally or pa rtly failed.  \n ",
+      "rerank_score": 0.003464871784672141,
+      "expired_since": null
+    }
+  ],
+  "query_log_id": 101
+}

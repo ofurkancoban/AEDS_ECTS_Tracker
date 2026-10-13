@@ -185,8 +185,8 @@ function Shell() {
             <MenuItem icon={<QrCode size={16} />} hint="Move your plan to another device" onClick={run(data.share)}>
               Share via QR code
             </MenuItem>
-            <MenuItem icon={<Printer size={16} />} onClick={run(data.print)}>
-              Print
+            <MenuItem icon={<Printer size={16} />} hint="Progress report for an advising meeting" onClick={run(data.print)}>
+              Print or save as PDF
             </MenuItem>
             <MenuDivider />
             <MenuItem danger icon={<Trash2 size={16} />} onClick={run(data.reset)}>

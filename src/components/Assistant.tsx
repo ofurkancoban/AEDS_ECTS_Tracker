@@ -1,4 +1,4 @@
-import { ArrowUp, Check, Copy, ExternalLink, MessageCircle, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react";
+import { ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, MessageCircle, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -7,6 +7,7 @@ import {
   SUGGESTIONS,
   buildCourseContext,
   clearConversation,
+  compactPassages,
   escapeHtml,
   formatAnswer,
   loadIncludeCourses,
@@ -18,6 +19,7 @@ import {
   withContext,
   type ChatMessage,
 } from "../lib/assistant";
+import { citation, groupSources, stripCitations } from "../lib/citations";
 import { useTracker } from "../state";
 import { cx } from "./ui";
 
@@ -104,7 +106,10 @@ export default function Assistant() {
     const message = include ? withContext(text, buildCourseContext(courses, state.targetGrade)) : text;
     try {
       const res = await postChat(message);
-      setMessages((m) => [...m, { role: "assistant", text: res.answer, sources: res.sources || [], queryLogId: res.query_log_id || null }]);
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", text: res.answer, sources: res.sources || [], retrieval: compactPassages(res.retrieval), queryLogId: res.query_log_id || null },
+      ]);
     } catch (err) {
       setMessages((m) => [...m, { role: "system", text: err instanceof Error && err.message ? err.message : "Something went wrong, please try again." }]);
     } finally {
@@ -250,6 +255,8 @@ export default function Assistant() {
 
 function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) => void; plain?: boolean }) {
   const [copied, setCopied] = useState(false);
+  const [active, setActive] = useState<number | null>(null);
+  const [showSources, setShowSources] = useState(false);
   if (msg.role === "system") return <div className="rise self-start px-1 text-[12.5px] text-warn italic">{msg.text}</div>;
   if (msg.role === "user")
     return (
@@ -263,12 +270,91 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
       setCopied(ok);
       window.setTimeout(() => setCopied(false), 1500);
     };
-    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(msg.text).then(() => done(true), () => done(false));
+    // "[2]" would point nowhere once pasted elsewhere.
+    const text = stripCitations(msg.text);
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => done(true), () => done(false));
     else done(false);
+  };
+  const sources = groupSources(msg.sources);
+  const cite = active !== null ? citation(active, msg.retrieval, msg.sources) : null;
+  // Citation chips are plain HTML inside the rendered answer; handle their clicks here.
+  const onAnswerClick = (e: React.MouseEvent) => {
+    const chip = (e.target as HTMLElement).closest<HTMLElement>("[data-cite]");
+    if (!chip) return;
+    const n = Number(chip.dataset.cite);
+    if (!msg.retrieval?.[n - 1]) {
+      setShowSources(true);
+      return;
+    }
+    setActive((a) => (a === n ? null : n));
   };
   return (
     <div className={cx("rise relative max-w-[88%] self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-3.5 pt-2.5 text-[14px] leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.04)]", plain ? "pb-2.5" : "pb-7")}>
-      <div className="md" dangerouslySetInnerHTML={{ __html: formatAnswer(msg.text) }} />
+      <div className="md" data-active-cite={active ?? undefined} onClick={onAnswerClick} dangerouslySetInnerHTML={{ __html: formatAnswer(msg.text) }} />
+
+      {cite && (
+        <div className="pop mt-2 rounded-xl border border-line bg-panel-2 p-3 text-[12.5px]" role="region" aria-label={`Source ${cite.n}`}>
+          <div className="flex items-start gap-2">
+            <span className="num mt-0.5 flex h-5 min-w-5 items-center justify-center rounded-md bg-accent px-1 text-[11px] font-bold text-white dark:text-paper">{cite.n}</span>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold">{cite.title}</div>
+              <div className="text-[11.5px] text-muted">
+                {cite.kind}
+                {cite.section ? ` · ${cite.section}` : ""}
+              </div>
+            </div>
+            <button onClick={() => setActive(null)} aria-label="Close source" className="cursor-pointer rounded-md p-0.5 text-faint hover:text-ink">
+              <X size={14} />
+            </button>
+          </div>
+          {cite.expiredSince && (
+            <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-warn-soft px-2 py-1 text-[11.5px] text-warn">
+              <TriangleAlert size={12} /> Outdated since {cite.expiredSince}
+            </div>
+          )}
+          <p className="mt-2 max-h-40 overflow-y-auto leading-relaxed whitespace-pre-line text-muted">{cite.text}</p>
+          {cite.url && (
+            <a href={cite.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 font-medium text-accent hover:underline">
+              Open document <ExternalLink size={12} />
+            </a>
+          )}
+        </div>
+      )}
+
+      {!plain && sources.length > 0 && (
+        <div className="mt-2 border-t border-line pt-1.5">
+          <button
+            onClick={() => setShowSources((v) => !v)}
+            aria-expanded={showSources}
+            className="inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-muted hover:text-ink"
+          >
+            <BookOpen size={13} /> Sources ({sources.length})
+            <ChevronDown size={13} className={cx("transition", showSources && "rotate-180")} />
+          </button>
+          {showSources && (
+            <ul className="mt-1.5 grid gap-1.5 pb-1">
+              {sources.map((g) => (
+                <li key={g.id} className="text-[12px] leading-snug">
+                  {g.url ? (
+                    <a href={g.url} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline">
+                      {g.title}
+                    </a>
+                  ) : (
+                    <span className="font-medium">{g.title}</span>
+                  )}
+                  <span className="text-muted">
+                    {" "}
+                    · {g.kind}
+                    {g.pages.length ? ` · p. ${g.pages.join(", ")}` : ""}
+                  </span>
+                  {g.expiredSince && <span className="ml-1 rounded bg-warn-soft px-1 text-[10.5px] text-warn">outdated since {g.expiredSince}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {!plain && (
       <div className="absolute right-1.5 bottom-1 flex items-center text-muted">
         {msg.queryLogId && (

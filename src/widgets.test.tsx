@@ -7,6 +7,7 @@ import { AEDS_RAG_BASE } from "./lib/assistant";
 import { codeOf } from "./lib/catalog";
 import { course } from "./lib/testUtils";
 import type { Course } from "./lib/types";
+import sample from "./lib/fixtures/rag-answer.json";
 
 const saved = (): Course[] => JSON.parse(localStorage.getItem("ects-tracker-state") || '{"courses":[]}').courses;
 let requests: { url: string; body: unknown }[];
@@ -112,6 +113,51 @@ describe("AEDS Assistant", () => {
     expect(localStorage.getItem("aedsRagMessages")).toBe("[]");
     expect(localStorage.getItem("aedsRagThreadId")).toBeNull();
     expect(within(panel).getByText(/AEDS know-it-all/)).toBeTruthy();
+  });
+});
+
+describe("AEDS Assistant sources", () => {
+  beforeEach(() => {
+    chatReply = () => ({ status: 200, body: sample });
+  });
+
+  it("opens the cited passage from a [n] chip, with its document link", async () => {
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Retakes?{Enter}");
+    const chips = await within(panel).findAllByRole("button", { name: "Show source 1" });
+    expect(chips.length).toBe(4);
+    await user.click(chips[0]);
+    const card = within(panel).getByRole("region", { name: "Source 1" });
+    expect(within(card).getByText("Examination regulations (2026)")).toBeTruthy();
+    expect(within(card).getByText(/Section 8 Resitting/)).toBeTruthy();
+    expect(within(card).getByRole("link", { name: /Open document/ }).getAttribute("href")).toMatch(/^https:\/\/elearning\.uni-oldenburg\.de\//);
+    await user.click(within(card).getByRole("button", { name: "Close source" }));
+    expect(within(panel).queryByRole("region", { name: "Source 1" })).toBeNull();
+  });
+
+  it("lists the answer's sources with pages", async () => {
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Retakes?{Enter}");
+    const toggle = await within(panel).findByRole("button", { name: /Sources \(1\)/ });
+    await user.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(within(panel).getByText(/p\. 5, 8, 11/)).toBeTruthy();
+    expect(within(panel).getByRole("link", { name: "Examination regulations (2026)" })).toBeTruthy();
+  });
+
+  it("keeps sources after a reload and copies answers without markers", async () => {
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Retakes?{Enter}");
+    await within(panel).findAllByRole("button", { name: "Show source 1" });
+    const stored = JSON.parse(localStorage.getItem("aedsRagMessages")!);
+    expect(stored[1].retrieval).toHaveLength(sample.retrieval.length);
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await user.click(within(panel).getByRole("button", { name: "Copy message" }));
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = (writeText.mock.calls[0] as unknown as [string])[0];
+    expect(copied).not.toMatch(/\[\d+\]/);
+    expect(copied).toContain("up to twice");
   });
 });
 

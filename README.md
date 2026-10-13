@@ -22,6 +22,8 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 - A dashboard with five views: Overview (progress ring, GPA, target GPA, semester load, countdown, alerts, per-category cards and charts), Courses (grouped by requirement), Timeline (one column per semester, drag cards to reschedule), Planner (next-semester options and the graduation path) and Checklist
 - A command palette for adding courses (Ctrl/Cmd + K): search the whole catalog by code, title or lecturer, then pick the category, semester, status and grade in one step
 - Sidebar navigation on desktop, a bottom tab bar with a central add button on mobile, an Appearance setting with six colour palettes (each in light and dark, all checked for WCAG AA text contrast), keyboard shortcuts (1-6 to switch views)
+- Workload by semester in the Planner: credits, weekly hours and end-of-term exams per upcoming semester, with one-click suggestions to move a planned elective out of an overloaded or uneven semester (only to semesters it actually runs in)
+- Print or save as PDF: an A4 progress report with the progress ring, requirements, compulsory modules, courses by semester and the suggested schedule
 - A Catalog view to browse every module with search (code, title, lecturer, exam type, learning outcomes), filters (category, language, offering term, open this semester, compulsory, hide taken) and sorting by difficulty or recency
 - A grade simulator in the Planner: pick an expected grade for every open course (and an average for unplanned credits) to see the projected final GPA against your target
 - Touch support on phones: long-press a card to drag it, or tap it to move it to another semester, change its status, grade or category
@@ -82,6 +84,7 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 - A chat bubble in the bottom-right corner answers questions about the programme (admission, deadlines, courses, exam rules) using [AEDS_RAG](https://aeds-rag-assistant.ofurkan.co), a separate retrieval-augmented chatbot built for the same programme
 - Anonymous by design: a guest session is created on first use and kept in your browser, with no sign-up; the conversation persists across reloads
 - Full-screen on mobile, a floating panel on desktop
+- Answers cite their sources: `[1]` markers open the quoted passage with a link to the document (examination regulations, programme website), and a Sources list shows every document and page used
 - This is the one feature that talks to an external server, your question and the assistant's answer go to AEDS_RAG's API to be answered; nothing else in the tracker does this
 
 ## Automatic catalog updates

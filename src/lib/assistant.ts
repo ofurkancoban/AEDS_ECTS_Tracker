@@ -1,6 +1,7 @@
 // AEDS Assistant client: talks to the AEDS_RAG API and builds the optional
 // course-progress context. The context text is parsed on the RAG side (codes
 // lines, "Target GPA ... across the next N ECTS"), so its wording must not change.
+import type { Passage, SourceRef } from "./citations";
 import { codeOf } from "./catalog";
 import { CATEGORIES } from "./constants";
 import type { Course } from "./types";
@@ -16,7 +17,8 @@ export const SUGGESTIONS = ["How many ECTS do I need to graduate?", "Which cours
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   text: string;
-  sources?: unknown[];
+  sources?: SourceRef[];
+  retrieval?: Passage[];
   queryLogId?: string | number | null;
   feedbackRating?: 1 | -1;
 }
@@ -75,7 +77,8 @@ async function ensureToken(): Promise<string> {
 export interface ChatResponse {
   answer: string;
   thread_id: string;
-  sources?: unknown[];
+  sources?: SourceRef[];
+  retrieval?: Passage[];
   query_log_id?: string | number | null;
 }
 
@@ -220,6 +223,8 @@ export function escapeHtml(s: string): string {
 function inline(s: string): string {
   return s
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => `<a href="${url.replace(/"/g, "%22")}" target="_blank" rel="noopener noreferrer">${label}</a>`)
+    // "[2]" citation markers (not Markdown links) become chips the chat opens.
+    .replace(/\[(\d+)\](?!\()/g, '<button type="button" class="cite" data-cite="$1" aria-label="Show source $1">$1</button>')
     .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
     .replace(/\*([^*]+)\*/g, "<i>$1</i>")
     .replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -272,4 +277,14 @@ export function formatAnswer(text: string): string {
     i++;
   }
   return html;
+}
+
+/** Keeps what the chat needs from a response without bloating localStorage. */
+export function compactPassages(retrieval: Passage[] | undefined): Passage[] {
+  return (retrieval || []).slice(0, 12).map((p) => ({
+    source_id: String(p.source_id || ""),
+    snippet: String(p.snippet || "").slice(0, 1500),
+    rerank_score: typeof p.rerank_score === "number" ? p.rerank_score : null,
+    expired_since: p.expired_since || null,
+  }));
 }

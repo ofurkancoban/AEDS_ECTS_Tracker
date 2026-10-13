@@ -1,6 +1,7 @@
 import { CalendarPlus, Check, Flag, GraduationCap, Info, Route, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { GradeSimulator } from "../components/GradeSimulator";
+import { WorkloadCard } from "../components/WorkloadCard";
 import { Badge, Button, CategoryTag, Empty, SectionTitle, cx } from "../components/ui";
 import { codeOf, resolveCode } from "../lib/catalog";
 import { categoryById, MAX_ECTS_PER_SEMESTER } from "../lib/constants";
@@ -47,6 +48,7 @@ export function Planner() {
           ? "Every requirement is covered. Enjoy the finish line."
           : "Every ECTS target is already covered by completed, running or planned courses."}
       </Empty>
+      <WorkloadCard />
       <GradeSimulator />
       </div>
     );
@@ -57,6 +59,7 @@ export function Planner() {
 
   return (
     <div className="grid grid-cols-1 gap-5">
+    <WorkloadCard />
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
       {next && (
         <section className="card p-5 lg:col-span-2 lg:self-start">
