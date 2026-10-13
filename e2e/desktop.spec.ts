@@ -222,3 +222,37 @@ test("rating a completed course sends one anonymous vote", async ({ page }) => {
   await expect.poll(() => votes.length).toBe(1);
   expect(votes[0]).toMatchObject({ event_type: "course-rating", client_payload: { course: "wir821", rating: 4 } });
 });
+
+test("what-if: simulate, leave the mode, keep, clear and undo", async ({ page }) => {
+  const realBefore = await page.locator("aside").getByText(/^\d\.\d\d$/).first().textContent();
+  await page.getByRole("switch", { name: /What-if mode/ }).first().click();
+  await page.keyboard.press("Control+k");
+  await page.getByPlaceholder(/Search by code/).fill("wir901");
+  await page.keyboard.press("Enter");
+  const dlg = page.getByRole("dialog", { name: "Add a course" });
+  await expect(dlg.getByRole("checkbox", { name: /What-if course/ })).toBeChecked();
+  await dlg.getByRole("button", { name: "1.0", exact: true }).click();
+  await dlg.getByRole("button", { name: /Add course/ }).click();
+
+  await expect.poll(async () => (await byCode(page, "wir901"))?.hypothetical).toBe(true);
+  await expect(page.getByRole("status")).toContainText("Projected GPA");
+  // The sidebar shows the real GPA, unchanged.
+  await expect(page.locator("aside").getByText(/^\d\.\d\d$/).first()).toHaveText(realBefore!);
+  await expect(page.getByText("78 ECTS to go")).toBeVisible();
+
+  // Leaving the mode keeps the simulated course, also across a reload.
+  await page.getByRole("switch", { name: /What-if mode/ }).first().click();
+  await page.reload();
+  await expect(page.getByRole("status")).toContainText("1 what-if course is kept aside");
+  expect((await courses(page)).length).toBe(14);
+
+  // Courses view marks it, timeline doesn't count it.
+  await page.keyboard.press("2");
+  await expect(page.locator("#cat-economics").getByText("what-if")).toBeVisible();
+
+  await page.getByRole("button", { name: "Clear what-if courses" }).click();
+  await page.getByRole("button", { name: "Remove", exact: true }).click();
+  await expect.poll(async () => (await courses(page)).length).toBe(13);
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect.poll(async () => (await courses(page)).length).toBe(14);
+});

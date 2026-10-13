@@ -41,7 +41,7 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 - German grading scale only (1.0, 1.3, 1.7 ... 4.0, 5.0), selected from a dropdown, not free text
 - A 5.0 correctly excludes that course's ECTS and grade from your totals (it's a fail, not a credit)
 - Overall GPA, per-category GPA, grade distribution chart, and a GPA-by-semester trend line
-- "What-if" mode: add hypothetical courses and grades to preview their effect on your GPA, without touching your real record
+- "What-if" mode: add hypothetical courses and grades to preview their effect on your GPA, without touching your real record; simulated courses stay (clearly marked) after you leave the mode until you clear them, and they are kept out of the CSV export and StudIP sync
 
 **Planning**
 

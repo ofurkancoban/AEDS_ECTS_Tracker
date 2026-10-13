@@ -42,6 +42,7 @@ interface TrackerCtx {
   setMoveTarget: (c: Course | null) => void;
   whatIf: boolean;
   setWhatIf: (v: boolean) => void;
+  clearHypothetical: () => void;
   palette: string;
   setPalette: (id: string) => void;
   view: View;
@@ -218,13 +219,23 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     [setCourses, toast, undo],
   );
 
-  const setWhatIf = useCallback(
-    (v: boolean) => {
-      setWhatIfRaw(v);
-      if (!v) setCourses((cs) => (cs.some((c) => c.hypothetical) ? cs.filter((c) => !c.hypothetical) : cs));
-    },
-    [setCourses],
-  );
+  // Leaving what-if mode keeps the simulated courses (as the classic UI did);
+  // they stay excluded from every real total until cleared explicitly.
+  const setWhatIf = useCallback((v: boolean) => setWhatIfRaw(v), []);
+
+  const clearHypothetical = useCallback(async () => {
+    const n = stateRef.current.courses.filter((c) => c.hypothetical).length;
+    if (!n) return;
+    const ok = await confirmRef.current({
+      title: `Remove ${n} what-if course${n === 1 ? "" : "s"}?`,
+      body: "Only simulated courses are removed. Your real courses stay as they are.",
+      confirmLabel: "Remove",
+      danger: true,
+    });
+    if (!ok) return;
+    setCourses((cs) => cs.filter((c) => !c.hypothetical));
+    toast({ message: `Removed ${n} what-if course${n === 1 ? "" : "s"}`, action: { label: "Undo", run: undo } });
+  }, [setCourses, toast, undo]);
 
   const setView = useCallback((v: View) => {
     setViewRaw(v);
@@ -232,6 +243,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  const confirmRef = useRef<(r: Omit<ConfirmRequest, "resolve">) => Promise<boolean>>(() => Promise.resolve(false));
   const confirm = useCallback(
     (r: Omit<ConfirmRequest, "resolve">) =>
       new Promise<boolean>((resolve) =>
@@ -245,6 +257,8 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       ),
     [],
   );
+
+  confirmRef.current = confirm;
 
   const openAdd = useCallback((preset?: AddPreset) => {
     setAddPreset(preset || null);
@@ -282,6 +296,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     setMoveTarget,
     whatIf,
     setWhatIf,
+    clearHypothetical,
     palette,
     setPalette,
     view,

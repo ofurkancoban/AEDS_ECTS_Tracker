@@ -48,7 +48,8 @@ export default function StudipSync({ open, onClose }: { open: boolean; onClose: 
       );
       return;
     }
-    setMatch(matchStums(rows, courses));
+    // Grades only ever go to real courses, never to what-if ones.
+    setMatch(matchStums(rows, courses.filter((c) => !c.hypothetical)));
   };
 
   const pendingAdds = match ? match.additions.filter((a) => !skipAdd.has(a.row.number)) : [];
@@ -282,7 +283,7 @@ function Results({
               </span>
               <select className="field h-8 max-w-[240px] !py-0 !text-[12.5px]" value={manual[r.number] || ""} onChange={(e) => setManual({ ...manual, [r.number]: e.target.value })}>
                 <option value="">Skip</option>
-                {courses.map((c) => (
+                {courses.filter((c) => !c.hypothetical).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({categoryById(c.category).short})
                   </option>

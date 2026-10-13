@@ -26,7 +26,7 @@ import type { CategoryStats } from "../lib/stats";
 import { useTracker } from "../state";
 
 export function Overview({ onBackup }: { onBackup: () => void }) {
-  const { stats, state, courses, catalog, patch, whatIf, setView, dismissBackupReminder } = useTracker();
+  const { stats, state, courses, catalog, patch, setView, dismissBackupReminder } = useTracker();
   const plan = planningSemester();
   const target = parseFloat(state.targetGrade);
 
@@ -103,7 +103,7 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
           label="Overall GPA"
           value={stats.gpa || "-"}
           foot={
-            whatIf && stats.projectedGpa ? (
+            stats.projectedGpa ? (
               <span className="text-warn">
                 <Sparkles size={11} className="inline" /> projected {stats.projectedGpa}
               </span>

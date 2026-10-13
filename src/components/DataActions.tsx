@@ -37,7 +37,13 @@ export function useDataActions(): DataActions {
   const jsonRef = useRef<HTMLInputElement>(null);
   const [shareState, setShareState] = useState<ShareState | null>(null);
 
-  const exportCsv = useCallback(() => downloadFile("ects-transcript.csv", coursesToCsv(courses), "text/csv"), [courses]);
+  // CSV has no what-if column, so simulated courses would come back as real ones: leave them out.
+  const exportCsv = useCallback(() => {
+    const real = courses.filter((c) => !c.hypothetical);
+    downloadFile("ects-transcript.csv", coursesToCsv(real), "text/csv");
+    const left = courses.length - real.length;
+    if (left) toast({ message: `Exported ${real.length} course(s). ${left} what-if course(s) left out (the JSON backup keeps them).` });
+  }, [courses, toast]);
 
   const exportJson = useCallback(() => {
     downloadFile("ects-tracker-backup.json", JSON.stringify(courses, null, 2), "application/json");
@@ -140,6 +146,7 @@ export function useDataActions(): DataActions {
     const sections = stats.categories
       .map((cat) => {
         const rows = cat.items
+          .filter((c) => !c.hypothetical)
           .map(
             (c) =>
               `<tr><td>${escapeHtml(c.name)}</td><td>${c.ects}</td><td>${escapeHtml(c.semester)}</td><td>${STATUS_LABEL[c.status]}</td><td>${

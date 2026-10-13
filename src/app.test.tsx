@@ -47,6 +47,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   document.documentElement.className = "";
   document.documentElement.removeAttribute("data-palette");
 });
@@ -218,20 +219,94 @@ describe("editing", () => {
 });
 
 describe("modes and settings", () => {
-  it("keeps what-if courses out of the real record and drops them when leaving", async () => {
+  it("adds what-if courses as simulated, completed courses that only move the projected GPA", async () => {
     seed(sample());
     const { user } = await renderApp();
+    const gpaBefore = screen.getAllByText("1.90")[0];
+    expect(gpaBefore).toBeTruthy();
     await user.click(screen.getAllByRole("switch", { name: /What-if mode/ })[0]);
+    expect(screen.getByRole("status").textContent).toMatch(/courses you add now are simulated/);
     press("k", { ctrlKey: true });
     await user.type(within(dialog("Add a course")).getByPlaceholderText(/Search by code/), "wir876");
     await user.keyboard("{Enter}");
-    await user.click(within(dialog("Add a course")).getByRole("button", { name: "1.0" }));
-    await user.click(within(dialog("Add a course")).getByRole("button", { name: /Add course/ }));
-    await waitFor(() => expect(saved().some((c) => c.hypothetical)).toBe(true));
-    expect(screen.getAllByText(/projected 1\.\d\d/).length).toBeGreaterThan(0);
+    const cfg = dialog("Add a course");
+    expect((within(cfg).getByRole("checkbox", { name: /What-if course/ }) as HTMLInputElement).checked).toBe(true);
+    expect((within(cfg).getByDisplayValue("Completed") as HTMLSelectElement).value).toBe("completed");
+    await user.click(within(cfg).getByRole("button", { name: "1.0" }));
+    await user.click(within(cfg).getByRole("button", { name: /Add course/ }));
+    await waitFor(() => expect(saved().find((c) => c.hypothetical)).toMatchObject({ status: "completed", grade: "1.0" }));
+    // Real GPA (3.0, 1.0, 1.7 over 18 ECTS) stays 1.90; projected includes the 1.0: 6.7 / 4 = 1.68.
+    expect(screen.getAllByText("1.90").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/projected 1\.68/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/ECTS to go/).textContent).toMatch(/^102 ECTS to go/);
+  });
+
+  it("keeps what-if courses when the mode is turned off, until cleared with confirmation", async () => {
+    seed([...sample(), course("wir876", "economics", "SoSe26", "completed", "1.0", { hypothetical: true })]);
+    const { user } = await renderApp();
+    // Saved what-if courses are visible and announced even with the mode off.
+    expect(screen.getByRole("status").textContent).toMatch(/1 what-if course is kept aside/);
     await user.click(screen.getAllByRole("switch", { name: /What-if mode/ })[0]);
-    await waitFor(() => expect(saved().some((c) => c.hypothetical)).toBe(false));
+    await user.click(screen.getAllByRole("switch", { name: /What-if mode/ })[0]);
+    expect(saved().filter((c) => c.hypothetical)).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Clear what-if courses" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(saved().filter((c) => c.hypothetical)).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Clear what-if courses" }));
+    expect(dialog("Remove 1 what-if course?")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(saved()).toHaveLength(4));
+    expect(saved().some((c) => c.hypothetical)).toBe(false);
+    expect(screen.queryByRole("status")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(saved().filter((c) => c.hypothetical)).toHaveLength(1));
+  });
+
+  it("turns a real course into a what-if one and back without losing it", async () => {
+    seed(sample());
+    const { user } = await renderApp();
+    press("2");
+    const row = (await screen.findByText("Advanced Microeconomics")).closest(".group") as HTMLElement;
+    await user.click(within(row).getByRole("button", { expanded: false }));
+    expect(within(row).queryByRole("checkbox", { name: "What-if only" })).toBeNull();
+    await user.click(screen.getAllByRole("switch", { name: /What-if mode/ })[0]);
+    await user.click(within(row).getByRole("checkbox", { name: "What-if only" }));
+    await waitFor(() => expect(saved().find((c) => codeOf(c.name) === "wir874")!.hypothetical).toBe(true));
+    await user.click(screen.getAllByRole("switch", { name: /What-if mode/ })[0]);
     expect(saved()).toHaveLength(4);
+    // The checkbox stays available on simulated courses so they can be made real again.
+    await user.click(within(row).getByRole("checkbox", { name: "What-if only" }));
+    await waitFor(() => expect(saved().find((c) => codeOf(c.name) === "wir874")!.hypothetical).toBe(false));
+  });
+
+  it("leaves what-if courses out of the CSV export", async () => {
+    seed([...sample(), course("wir876", "economics", "SoSe26", "completed", "1.0", { hypothetical: true })]);
+    const blobs: Blob[] = [];
+    vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (blobs.push(b as Blob), "blob:x"));
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Data" }));
+    await user.click(screen.getByRole("button", { name: "Export CSV" }));
+    const text = await blobs[0].text();
+    expect(text.trim().split("\n")).toHaveLength(1 + 4);
+    expect(text).not.toContain("wir876");
+    expect(screen.getByText(/1 what-if course\(s\) left out/)).toBeTruthy();
+  });
+
+  it("never writes StudIP grades into what-if courses", async () => {
+    seed([course("wir821", "economics", "SoSe24", "completed", "", { hypothetical: true })]);
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Data" }));
+    await user.click(screen.getByRole("button", { name: /Sync from StudIP/ }));
+    const dlg = await screen.findByRole("dialog", { name: "Sync grades from StudIP" });
+    await user.click(within(dlg).getByPlaceholderText(/Paste the copied text/));
+    await user.paste("1\tmodule International Trade, Production and Change\t2100821\t\t2,0\tBE");
+    await user.click(within(dlg).getByRole("button", { name: /Match/ }));
+    // Proposed as a new real course instead of updating the simulated one.
+    expect(within(dlg).queryByText(/Matched/)).toBeNull();
+    expect(within(dlg).getByText(/Not in your tracker yet/)).toBeTruthy();
   });
 
   it("switches palette and mode from Appearance without touching course data", async () => {

@@ -280,7 +280,7 @@ function CourseDetails({ course, code, difficulty, whatIf }: { course: Course; c
             ))}
           </select>
         </label>
-        {whatIf && (
+        {(whatIf || course.hypothetical) && (
           <label className="flex items-center gap-2 self-end pb-2 text-[13px]">
             <input
               type="checkbox"

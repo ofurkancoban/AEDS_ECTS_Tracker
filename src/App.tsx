@@ -72,7 +72,8 @@ interface InstallPromptEvent extends Event {
 }
 
 function Shell() {
-  const { view, setView, state, patch, whatIf, setWhatIf, openAdd, stats, undo, redo, undoCount, redoCount, courses, studipOpen, setStudipOpen, toast } = useTracker();
+  const { view, setView, state, patch, whatIf, setWhatIf, openAdd, stats, undo, redo, undoCount, redoCount, courses, studipOpen, setStudipOpen, toast, clearHypothetical } = useTracker();
+  const hypotheticalCount = courses.filter((c) => c.hypothetical).length;
   const [assistantReady, setAssistantReady] = useState(false);
   const data = useDataActions();
   const changelog = useChangelog();
@@ -286,12 +287,33 @@ function Shell() {
           <WhatIfToggle whatIf={whatIf} setWhatIf={setWhatIf} className="mt-3" />
         </div>
 
-        {whatIf && (
-          <div className="rise mb-4 flex items-center gap-2 rounded-2xl border border-dashed border-warn/60 bg-warn-soft px-4 py-2.5 text-[13px] text-warn">
-            <Sparkles size={15} />
-            <span className="flex-1">
-              What-if mode: new courses are simulated and only affect the projected GPA. Turning it off discards them.
+        {(whatIf || hypotheticalCount > 0) && (
+          <div
+            role="status"
+            className="rise mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-dashed border-warn/60 bg-warn-soft px-4 py-2.5 text-[13px] text-warn"
+          >
+            <Sparkles size={15} className="shrink-0" />
+            <span className="min-w-0 flex-1">
+              {whatIf
+                ? "What-if mode: courses you add now are simulated. They never count toward your real credits or GPA, only the projected GPA."
+                : `${hypotheticalCount} what-if course${hypotheticalCount === 1 ? " is" : "s are"} kept aside and not counted.`}
+              {stats.projectedGpa && (
+                <>
+                  {" "}
+                  Projected GPA <b className="num">{stats.projectedGpa}</b>.
+                </>
+              )}
             </span>
+            {!whatIf && (
+              <Button size="sm" variant="ghost" className="!text-warn" onClick={() => setWhatIf(true)}>
+                Turn on
+              </Button>
+            )}
+            {hypotheticalCount > 0 && (
+              <Button size="sm" variant="outline" className="!border-warn/50 !text-warn" onClick={clearHypothetical}>
+                Clear what-if courses
+              </Button>
+            )}
           </div>
         )}
 
