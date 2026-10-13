@@ -56,3 +56,18 @@ test("appearance dialog switches palette and mode live", async ({ page }) => {
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/dark/);
 });
+
+test("What's new lists each change as a bullet point", async ({ page }) => {
+  await open(page);
+  await page.getByRole("button", { name: "What's new" }).click();
+  const dlg = page.getByRole("dialog", { name: "What's new" });
+  const items = dlg.locator("li");
+  expect(await items.count()).toBeGreaterThan(3);
+  const style = await items.first().evaluate((li) => {
+    const cs = getComputedStyle(li);
+    return { display: cs.display, marker: getComputedStyle(li.parentElement!).listStyleType };
+  });
+  expect(style).toEqual({ display: "list-item", marker: "disc" });
+  await test.info().attach("whats-new", { body: await dlg.screenshot(), contentType: "image/png" });
+  await dlg.screenshot({ path: "test-results/whats-new.png" });
+});

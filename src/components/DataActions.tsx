@@ -379,7 +379,7 @@ export function ChangelogModal({ open, onClose, entries }: { open: boolean; onCl
           <div key={e.version} className="relative">
             <span className={`absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-panel ${i === 0 ? "bg-accent" : "bg-line-strong"}`} />
             <div className="num text-[12px] font-semibold text-muted">{e.version}</div>
-            <ul className="mt-1.5 grid gap-1.5 text-[13.5px] leading-relaxed">
+            <ul className="mt-1.5 list-disc space-y-1.5 pl-5 text-[13.5px] leading-relaxed marker:text-accent">
               {e.items.map((it, j) => (
                 <li key={j}>{it}</li>
               ))}
