@@ -31,7 +31,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "react";
 import { AddCourseDialog } from "./components/AddCourse";
 import { AppearanceModal } from "./components/Appearance";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -43,7 +43,7 @@ import { ISSUES_URL, issueUrl } from "./lib/reportIssue";
 import { classicUrl, isPreview } from "./lib/stage";
 import { MoveSheet } from "./components/MoveSheet";
 import { ChangelogModal, HowItWorksModal, ShareModal, useChangelog, useDataActions, useQrImport } from "./components/DataActions";
-import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, Toasts, cx } from "./components/ui";
+import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, SlidingPill, Toasts, cx } from "./components/ui";
 import { TOTAL_REQUIRED } from "./lib/constants";
 import { currentSemester } from "./lib/semesters";
 import { hitGlobalCounter, readFlag, writeFlag } from "./lib/storage";
@@ -97,6 +97,8 @@ function Shell() {
   useEffect(() => onStartTour(() => setTouring(true)), []);
   const [howOpen, setHowOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const sideNav = useRef<HTMLElement>(null);
+  const bottomNav = useRef<HTMLDivElement>(null);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [fileBackupOpen, setFileBackupOpen] = useState(false);
   const [previewDismissed, setPreviewDismissed] = useState(() => readFlag("ects-next-preview-note") === "hidden");
@@ -248,15 +250,17 @@ function Shell() {
       {/* Sidebar */}
       <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col border-r border-line bg-panel/70 px-4 py-5 backdrop-blur-xl lg:flex">
         <Brand />
-        <nav className="mt-8 grid gap-1" data-tour="nav">
+        <nav ref={sideNav} className="relative mt-8 grid gap-1" data-tour="nav">
+          <SlidingPill group={sideNav} active={view} className="rounded-xl bg-ink shadow-[var(--shadow)]" />
           {NAV.map((n, i) => (
             <button
               key={n.id}
               data-tour={`nav-${n.id}`}
+              data-active={view === n.id}
               onClick={() => setView(n.id)}
               className={cx(
-                "group flex h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-body font-medium transition",
-                view === n.id ? "bg-ink text-paper shadow-[var(--shadow)]" : "text-muted hover:bg-ink/5 hover:text-ink",
+                "group relative flex h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-body font-medium transition-colors",
+                view === n.id ? "text-paper" : "text-muted hover:bg-ink/5 hover:text-ink",
               )}
             >
               {n.icon}
@@ -433,7 +437,13 @@ function Shell() {
 
       {/* Mobile bottom navigation */}
       <nav data-tour="nav" className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2">
+        <div ref={bottomNav} className="relative mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2">
+          <SlidingPill
+            group={bottomNav}
+            active={`${view}-${moreOpen}`}
+            selector='[data-active="true"] [data-pill]'
+            className="rounded-full bg-accent-soft"
+          />
           {NAV.slice(0, 2).map((n) => (
             <NavTab key={n.id} item={n} tour={`nav-${n.id}`} active={view === n.id} onClick={() => setView(n.id)} />
           ))}
@@ -574,9 +584,12 @@ function NavTab({ item, active, onClick, tour }: { item: (typeof NAV)[number]; a
     <button
       onClick={onClick}
       data-tour={tour}
-      className={cx("flex h-full cursor-pointer flex-col items-center justify-center gap-1 text-micro font-medium transition", active ? "text-accent" : "text-muted")}
+      data-active={active}
+      className={cx("relative flex h-full cursor-pointer flex-col items-center justify-center gap-1 text-micro font-medium transition-colors", active ? "text-accent" : "text-muted")}
     >
-      <span className={cx("flex h-7 w-12 items-center justify-center rounded-full transition", active && "bg-accent-soft")}>{item.icon}</span>
+      <span data-pill className="flex h-7 w-12 items-center justify-center rounded-full">
+        {item.icon}
+      </span>
       {item.label}
     </button>
   );

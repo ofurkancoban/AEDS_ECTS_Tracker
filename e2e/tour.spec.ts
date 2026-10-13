@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { courses, isolate, open } from "./helpers";
+import { courses, isolate, open, settle } from "./helpers";
 
 const title = (page: Page) => page.getByTestId("tour").locator("#tour-title");
 const next = (page: Page) => page.getByTestId("tour").getByRole("button", { name: /^(Start the tour|Next|Finish)/ });
@@ -119,7 +119,7 @@ test("the tour card has no serious accessibility issues, in light and dark", asy
     await page.getByRole("button", { name: "Guided tour" }).click();
     for (const step of [/Welcome/, "Six views, one plan", "Every course starts here"]) {
       await nextUntil(page, step instanceof RegExp ? step : new RegExp(step));
-      await page.waitForTimeout(700); // let the entry animation finish before checking contrast
+      await settle(page); // let the entry animation finish before checking contrast
       const { violations } = await new AxeBuilder({ page }).include('[data-testid="tour"]').analyze();
       expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.help}`)).toEqual([]);
     }

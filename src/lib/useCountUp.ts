@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "./preferences";
 
 /** Animates a number from its previous value to `value` (instant with reduced motion). */
-export function useCountUp(value: number, duration = 700): number {
+export function useCountUp(value: number, duration = 700, decimals = 0): number {
   const [shown, setShown] = useState(() => (prefersReducedMotion() ? value : 0));
   const from = useRef(shown);
   useEffect(() => {
@@ -17,13 +17,14 @@ export function useCountUp(value: number, duration = 700): number {
     const step = (t: number) => {
       const k = Math.min(1, (t - start) / duration);
       const eased = 1 - Math.pow(1 - k, 3);
-      const v = Math.round(a + (value - a) * eased);
+      const f = 10 ** decimals;
+      const v = Math.round((a + (value - a) * eased) * f) / f;
       setShown(v);
       from.current = v;
       if (k < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [value, duration]);
+  }, [value, duration, decimals]);
   return shown;
 }

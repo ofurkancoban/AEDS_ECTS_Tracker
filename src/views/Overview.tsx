@@ -34,6 +34,7 @@ import { isFail } from "../lib/stats";
 import type { CategoryStats } from "../lib/stats";
 import type { CategoryId } from "../lib/types";
 import { useMediaQuery } from "../lib/useMediaQuery";
+import { CountUp } from "../components/CountUp";
 import { useTracker } from "../state";
 
 export function Overview({ onBackup, onImport }: { onBackup: () => void; onImport: () => void }) {
@@ -106,7 +107,11 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
             <h2 className="font-serif text-display leading-tight font-semibold tracking-tight sm:text-display-lg">
               {head.lead ? (
                 <>
-                  <span className="text-accent">{head.lead}:</span> <span className="num">{stats.completed}</span> / {TOTAL_REQUIRED} ECTS
+                  <span className="text-accent">{head.lead}:</span>{" "}
+                  <span className="num">
+                    <CountUp value={stats.completed} />
+                  </span>{" "}
+                  / {TOTAL_REQUIRED} ECTS
                 </>
               ) : (
                 head.text
@@ -150,11 +155,11 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
       </section>
 
       {/* KPIs */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-tour="kpis">
+      <section className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4" data-tour="kpis">
         <Kpi
           icon={<Award size={17} />}
           label="Overall GPA"
-          value={stats.gpa || "-"}
+          value={stats.gpa ? <CountUp value={parseFloat(stats.gpa)} decimals={(String(stats.gpa).split(".")[1] || "").length} /> : "-"}
           foot={
             stats.projectedGpa ? (
               <span className="text-warn">
@@ -193,7 +198,9 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
           label={`${plan} load`}
           value={
             <>
-              <span className="num">{termEcts}</span>
+              <span className="num">
+                <CountUp value={termEcts} />
+              </span>
               <span className="text-title-sm text-muted"> ECTS</span>
             </>
           }
@@ -375,7 +382,7 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
       {/* Categories */}
       <section data-tour="categories">
         <SectionTitle eyebrow="Requirements" title="Where your credits go" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {stats.categories
             .filter((c) => !c.excludedFromTotal || c.items.length)
             // Additional takes the thesis's old place; the thesis closes the list on a row of its own.
@@ -601,7 +608,9 @@ function CategoryCard({ cat, className }: { cat: CategoryStats; className?: stri
       {req > 0 ? (
         <>
           <div className="mt-3 flex items-baseline gap-1">
-            <span className="num text-display leading-none font-semibold">{cat.completed}</span>
+            <span className="num text-display leading-none font-semibold">
+              <CountUp value={cat.completed} />
+            </span>
             <span className="num text-body-sm text-muted">/ {req} ECTS</span>
             {cat.remaining > 0 && <span className="ml-auto text-meta text-muted">{cat.remaining} to plan</span>}
           </div>

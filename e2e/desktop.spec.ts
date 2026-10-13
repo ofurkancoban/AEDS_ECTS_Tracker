@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { LATEST_CHANGELOG, byCode, courses, importFixture, isolate, open } from "./helpers";
+import { LATEST_CHANGELOG, byCode, courses, importFixture, isolate, open, settle } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await open(page);
@@ -76,6 +76,8 @@ test("drags a course to Specialization and back", async ({ page }) => {
 
 test("reschedules on the timeline by dragging", async ({ page }) => {
   await page.keyboard.press("3");
+  // The semester columns slide in; drag once they have arrived.
+  await settle(page);
   const card = page.locator('[aria-label^="SoSe"] [draggable="true"], [aria-label^="WiSe"] [draggable="true"]', { hasText: "Advanced Microeconomics" });
   const target = page.locator("section", { has: page.locator("h3", { hasText: /^SoSe27$/ }) });
   await card.dragTo(target);

@@ -1,4 +1,4 @@
-import { Check, CircleDashed, CircleDot, ListChecks } from "lucide-react";
+import { CircleDashed, CircleDot, ListChecks } from "lucide-react";
 import type { ReactNode } from "react";
 import { CategoryDot, cx } from "../components/ui";
 import { codeOf, labelForCode } from "../lib/catalog";
@@ -124,7 +124,12 @@ function Icon({ mark }: { mark: Mark }) {
         mark === "done" ? "bg-accent text-white dark:text-paper" : mark === "covered" ? "bg-warn-soft text-warn" : "border border-line-strong text-faint",
       )}
     >
-      {mark === "done" ? <Check size={14} strokeWidth={3} /> : mark === "covered" ? <CircleDot size={14} /> : <CircleDashed size={14} />}
+      {mark === "done" ? (
+        // Drawn in, rather than just appearing.
+        <svg viewBox="0 0 24 24" width={14} height={14} className="tick-draw" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" pathLength={1} />
+        </svg>
+      ) : mark === "covered" ? <CircleDot size={14} /> : <CircleDashed size={14} />}
     </span>
   );
 }

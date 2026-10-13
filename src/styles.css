@@ -364,31 +364,6 @@ select.field {
   }
 }
 
-/* View transitions between tabs (Chromium, Safari 18+). */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.22s;
-  animation-timing-function: ease;
-}
-::view-transition-old(root) {
-  animation-name: vt-out;
-}
-::view-transition-new(root) {
-  animation-name: vt-in;
-}
-@keyframes vt-out {
-  to {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
-@keyframes vt-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
 /* Graduation celebration (see components/Celebration.tsx). */
 @keyframes confetti-fall {
   0% {
@@ -686,4 +661,96 @@ select.field {
   cursor: pointer;
   border-radius: 999px;
   animation: tour-in-next 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Motion: short and quiet (all of it stops under reduced motion, see above). */
+
+/* Cards in a group appear one after another. "backwards", not "both": a fill
+   that outlives the animation would keep every card in its own stacking
+   context, and a menu opened in one card would slide under the next. */
+.stagger > * {
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.stagger > :nth-child(2) { animation-delay: 40ms; }
+.stagger > :nth-child(3) { animation-delay: 80ms; }
+.stagger > :nth-child(4) { animation-delay: 120ms; }
+.stagger > :nth-child(5) { animation-delay: 160ms; }
+.stagger > :nth-child(6) { animation-delay: 200ms; }
+.stagger > :nth-child(7) { animation-delay: 240ms; }
+.stagger > :nth-child(8) { animation-delay: 280ms; }
+.stagger > :nth-child(n + 9) { animation-delay: 300ms; }
+
+/* A course that was just added or changed lights up once. */
+.flash {
+  animation: flash 1.4s ease-out;
+}
+@keyframes flash {
+  0%,
+  20% {
+    background-color: color-mix(in oklab, var(--accent) 16%, var(--panel));
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+/* A tick that draws itself. */
+.tick-draw path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tick-draw 0.35s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards;
+}
+@keyframes tick-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The highlight behind the selected item of a group, gliding between items. */
+.pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.pill-animate {
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Dialogs: a bottom sheet slides up on a phone, a card pops in elsewhere. */
+@media (max-width: 639px) {
+  .sheet {
+    animation: sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* Toasts arrive with a little spring. */
+.toast-in {
+  animation: toast-in 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+
+/* Dropdown menus unfold from their button. */
+.menu-in {
+  animation: menu-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
 }

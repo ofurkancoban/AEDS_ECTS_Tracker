@@ -18,6 +18,7 @@
       "CSV import understands files saved by Excel with German settings (semicolons, decimal commas)",
       "A damaged backup file or saved entry can no longer break the app; unreadable entries are skipped and reported",
       "Undo from the 'Removed' message now always brings back that course, and the countdown shows how long ago a passed graduation date was",
+      "Gentle motion throughout: cards appear one after another, progress bars and the ring fill in, numbers count up, the selected tab and filter slide to your choice, courses glide to their new place and light up briefly when added or changed, checklist ticks draw themselves, and dialogs, menus and messages ease in. All of it switches off when your system asks for reduced motion",
       "On the Overview, Thesis now has a full-width card at the end of Where your credits go, and Additional takes its old place",
       "Fresh default colours: Emerald, a vivid emerald green with orange, in light and dark mode. Prefer the old look? Classic is still under Appearance, which also gains three more palettes: Midnight Teal, Uni Blue and Sage & Clay. If you picked a palette before, you keep it",
       "New interactive guided tour: a spotlight, animated arrows and a tapping hand walk you through adding courses, reading your progress, planning, the Catalog and the AI assistant. Steps marked Try it wait for you to do it yourself. It starts on your first visit and can be replayed from Guided tour or How it works",

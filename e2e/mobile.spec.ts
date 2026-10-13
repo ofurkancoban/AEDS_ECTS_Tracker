@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { byCode, importFixture, isolate, noHorizontalScroll, open } from "./helpers";
+import { byCode, importFixture, isolate, noHorizontalScroll, open, settle } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await open(page);
@@ -132,6 +132,7 @@ test("the page content starts near the top on a phone", async ({ page }, info) =
 test("no serious accessibility issues on the phone layout", async ({ page }) => {
   const issues: string[] = [];
   const scan = async (where: string) => {
+    await settle(page);
     const res = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     res.violations
       .filter((v) => v.impact === "serious" || v.impact === "critical")

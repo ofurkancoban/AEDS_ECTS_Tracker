@@ -2,9 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { migrateCourseNames, useCatalog } from "./lib/catalog";
 import { computeStats, type Stats } from "./lib/stats";
 import { updateFavicon } from "./components/Logo";
+import { noteNewCourses } from "./lib/motion";
 import { PALETTE_KEY, applyPalette, loadPalette } from "./lib/palettes";
-import { DENSITY_KEY, applyDensity, loadDensity, prefersReducedMotion, type Density } from "./lib/preferences";
-import { flushSync } from "react-dom";
+import { DENSITY_KEY, applyDensity, loadDensity, type Density } from "./lib/preferences";
 import { loadState, readFlag, saveState, writeFlag } from "./lib/storage";
 import type { Catalog } from "./lib/catalog";
 import type { Course, TrackerState } from "./lib/types";
@@ -192,6 +192,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     // Apply to the latest courses right away (not at the next render), so
     // back-to-back edits each see the previous one and undo stays exact.
     const next = fn(stateRef.current.courses);
+    noteNewCourses(stateRef.current.courses, next);
     stateRef.current = { ...stateRef.current, courses: next };
     setState((s) => ({ ...s, courses: next }));
   }, []);
@@ -218,6 +219,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     redoStack.current.push(stateRef.current.courses);
     lastRecord.current = 0;
     syncCounts();
+    noteNewCourses(stateRef.current.courses, prev);
     stateRef.current = { ...stateRef.current, courses: prev };
     setState((s) => ({ ...s, courses: prev }));
   }, []);
@@ -228,6 +230,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     undoStack.current.push(stateRef.current.courses);
     lastRecord.current = 0;
     syncCounts();
+    noteNewCourses(stateRef.current.courses, next);
     stateRef.current = { ...stateRef.current, courses: next };
     setState((s) => ({ ...s, courses: next }));
   }, []);
@@ -268,10 +271,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   }, [setCourses, toast]);
 
   const setView = useCallback((v: View) => {
-    // Cross-fade between views where the browser supports it.
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    if (doc.startViewTransition && !prefersReducedMotion()) doc.startViewTransition(() => flushSync(() => setViewRaw(v)));
-    else setViewRaw(v);
+    // No page-wide view transition: it snapshots the whole page, so the
+    // navigation highlight couldn't glide and text doubled mid-fade. The new
+    // view rises in on its own (the "rise" wrapper in App).
+    setViewRaw(v);
     writeFlag(VIEW_KEY, v);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);

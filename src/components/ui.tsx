@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { useMounted, useSlidingPill } from "../lib/motion";
 import { categoryById } from "../lib/constants";
 import type { CategoryId, Status } from "../lib/types";
 import { useTracker } from "../state";
@@ -110,7 +111,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={cx(
-          "pop flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-line bg-panel shadow-[var(--shadow-lg)] sm:rounded-3xl",
+          "pop sheet flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-line bg-panel shadow-[var(--shadow-lg)] sm:rounded-3xl",
           width,
         )}
         onMouseDown={(e) => e.stopPropagation()}
@@ -167,8 +168,8 @@ export function Menu({
       {open && (
         <div
           className={cx(
-            "pop absolute z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-panel p-1.5 shadow-[var(--shadow-lg)]",
-            align === "right" ? "right-0" : "left-0",
+            "menu-in absolute z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-panel p-1.5 shadow-[var(--shadow-lg)]",
+            align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left",
             width,
           )}
         >
@@ -300,14 +301,16 @@ export function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; tit
 }
 
 export function Bar({ segments, height = 8 }: { segments: { value: number; color: string; striped?: boolean }[]; height?: number }) {
+  // Grows in from empty the first time it shows.
+  const ready = useMounted();
   return (
     <div className="flex w-full overflow-hidden rounded-full bg-ink/[0.06]" style={{ height }}>
       {segments.map((s, i) => (
         <div
           key={i}
-          className="h-full transition-[width] duration-500"
+          className="h-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
-            width: `${Math.max(0, Math.min(100, s.value))}%`,
+            width: ready ? `${Math.max(0, Math.min(100, s.value))}%` : "0%",
             background: s.striped
               ? `repeating-linear-gradient(135deg, ${s.color} 0 4px, color-mix(in oklab, ${s.color} 45%, transparent) 4px 8px)`
               : s.color,
@@ -326,7 +329,7 @@ export function Toasts() {
         <div
           key={t.id}
           className={cx(
-            "pop pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl px-4 py-2.5 text-body-sm shadow-[var(--shadow-lg)]",
+            "toast-in pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl px-4 py-2.5 text-body-sm shadow-[var(--shadow-lg)]",
             t.tone === "warn" ? "bg-warn text-white" : "bg-ink text-paper",
           )}
         >
@@ -381,4 +384,15 @@ export function Empty({ icon, title, children }: { icon: ReactNode; title: strin
       {children && <div className="mt-1 max-w-sm text-body-sm text-muted">{children}</div>}
     </div>
   );
+}
+
+/**
+ * The highlight behind the selected item of a group (marked data-active="true"),
+ * sliding to the next one when the selection changes. Put it first inside a
+ * `relative` group whose items are `relative` too, so they paint above it.
+ */
+export function SlidingPill({ group, active, selector, className }: { group: RefObject<HTMLElement | null>; active: unknown; selector?: string; className: string }) {
+  const { box, animate } = useSlidingPill(group, active, selector);
+  if (!box) return null;
+  return <span aria-hidden="true" className={cx("pill", animate && "pill-animate", className)} style={{ transform: `translate(${box.x}px, ${box.y}px)`, width: box.w, height: box.h }} />;
 }

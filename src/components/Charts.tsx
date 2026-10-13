@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { gradeTone } from "../lib/grades";
 import { compareSemesters } from "../lib/semesters";
+import { useMounted } from "../lib/motion";
 import { useCountUp } from "../lib/useCountUp";
 
 const cx2 = (...c: (string | false)[]) => c.filter(Boolean).join(" ");
@@ -23,7 +24,9 @@ export function ProgressRing({
 }) {
   const r = (size - stroke) / 2;
   const C = 2 * Math.PI * r;
-  const clamp = (v: number) => Math.max(0, Math.min(1, v));
+  // The arcs sweep in from empty the first time the ring shows.
+  const ready = useMounted();
+  const clamp = (v: number) => (ready ? Math.max(0, Math.min(1, v)) : 0);
   const fc = clamp(completed / total);
   const fi = clamp(inProgress / total) * (1 - fc > 0 ? 1 : 0);
   const fp = clamp(planned / total);
@@ -33,7 +36,7 @@ export function ProgressRing({
     // A zero-length arc with a round cap would still draw a dot.
     opacity: frac > 0.0005 ? 1 : 0,
   });
-  const pct = Math.round(fc * 100);
+  const pct = Math.round(Math.max(0, Math.min(1, completed / total)) * 100);
   const shown = useCountUp(completed);
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -53,7 +56,7 @@ export function ProgressRing({
           stroke="url(#ring-hatch)"
           strokeWidth={stroke}
           strokeLinecap="round"
-          style={{ ...seg(Math.min(1, fc + fi), Math.min(fp, 1 - fc - fi)), transition: "all .6s ease" }}
+          style={{ ...seg(Math.min(1, fc + fi), Math.min(fp, 1 - fc - fi)), transition: "all .9s cubic-bezier(0.22, 1, 0.36, 1)" }}
         />
         <circle
           cx={size / 2}
@@ -63,7 +66,7 @@ export function ProgressRing({
           stroke="var(--warn)"
           strokeWidth={stroke}
           strokeLinecap="round"
-          style={{ ...seg(fc, Math.min(fi, 1 - fc)), transition: "all .6s ease" }}
+          style={{ ...seg(fc, Math.min(fi, 1 - fc)), transition: "all .9s cubic-bezier(0.22, 1, 0.36, 1)" }}
         />
         <circle
           cx={size / 2}
@@ -73,7 +76,7 @@ export function ProgressRing({
           stroke="var(--accent)"
           strokeWidth={stroke}
           strokeLinecap="round"
-          style={{ ...seg(0, fc), transition: "all .6s ease" }}
+          style={{ ...seg(0, fc), transition: "all .9s cubic-bezier(0.22, 1, 0.36, 1)" }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">

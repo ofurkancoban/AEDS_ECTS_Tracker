@@ -1,8 +1,8 @@
 import { CalendarPlus, Check, Flag, GraduationCap, Info, Route, Wand2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { GradeSimulator } from "../components/GradeSimulator";
 import { WorkloadCard } from "../components/WorkloadCard";
-import { Badge, Button, CategoryTag, Empty, SectionTitle, cx } from "../components/ui";
+import { Badge, Button, CategoryTag, Empty, SectionTitle, SlidingPill, cx } from "../components/ui";
 import { codeOf, resolveCode } from "../lib/catalog";
 import { categoryById, MAX_ECTS_PER_SEMESTER } from "../lib/constants";
 import { newCourse } from "../lib/io";
@@ -14,6 +14,7 @@ export function Planner() {
   const next = useMemo(() => nextSemesterPlans(courses, stats, catalog), [courses, stats, catalog]);
   const path = useMemo(() => graduationPath(courses, stats, catalog), [courses, stats, catalog]);
   const [option, setOption] = useState<"A" | "B">("A");
+  const optionGroup = useRef<HTMLDivElement>(null);
 
   const taken = useMemo(() => {
     const s = new Set<string>();
@@ -68,14 +69,16 @@ export function Planner() {
             title={next.semester}
             action={
               !sameAB && (
-                <div className="flex rounded-xl border border-line p-0.5">
+                <div ref={optionGroup} className="relative flex rounded-xl border border-line p-0.5">
+                  <SlidingPill group={optionGroup} active={option} className="rounded-lg bg-ink" />
                   {(["A", "B"] as const).map((o) => (
                     <button
                       key={o}
                       onClick={() => setOption(o)}
+                      data-active={option === o}
                       className={cx(
-                        "h-7 cursor-pointer rounded-lg px-3 text-meta font-semibold transition",
-                        option === o ? "bg-ink text-paper" : "text-muted hover:text-ink",
+                        "relative h-7 cursor-pointer rounded-lg px-3 text-meta font-semibold transition-colors",
+                        option === o ? "text-paper" : "text-muted hover:text-ink",
                       )}
                     >
                       Option {o}

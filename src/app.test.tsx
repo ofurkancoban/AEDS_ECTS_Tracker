@@ -653,7 +653,8 @@ describe("progress headline", () => {
   it("says how much is left, what is already covered and what is not in the plan", async () => {
     seed(sample());
     await renderApp();
-    expect(screen.getByRole("heading", { level: 2, name: /\/ 120 ECTS/ }).textContent).toBe("Getting going: 18 / 120 ECTS");
+    // The number counts up, so wait for it to land.
+    await waitFor(() => expect(screen.getByRole("heading", { level: 2, name: /\/ 120 ECTS/ }).textContent).toBe("Getting going: 18 / 120 ECTS"));
     expect(status()).toBe(
       "102 ECTS left. 6 of them are already running or planned. Not in your plan yet: Economics 18 ECTS, Empirical Methods 18 ECTS, Data Science 12 ECTS, Specialization 18 ECTS, Thesis 30 ECTS. Plan it",
     );

@@ -20,6 +20,7 @@ import { gradeTone } from "../lib/grades";
 import { isFail } from "../lib/stats";
 import type { CategoryId, Course } from "../lib/types";
 import { useTracker } from "../state";
+import { useFlash } from "../lib/motion";
 import { Badge, CategoryDot, CategoryTag, Menu, MenuDivider, MenuItem, MenuLabel, StatusPill, cx } from "./ui";
 
 /** Categories a course may be moved to (same rules as the classic UI's drag and drop). */
@@ -54,13 +55,16 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
   const difficulty = code ? difficultyLabel(ratings[code]) : null;
   const moved = course.homeCategory && course.homeCategory !== course.category;
   const tone = course.status === "completed" ? gradeTone(course.grade) : null;
+  const flash = useFlash(course.id, `${course.status}|${course.grade}|${course.semester}|${course.category}|${course.ects}`);
 
   return (
     <div
       draggable={!course.hypothetical}
       onDragStart={(e) => startCourseDrag(e, course)}
+      data-flip-id={course.id}
       className={cx(
         "group rounded-2xl border bg-panel transition",
+        flash && "flash",
         open ? "border-line-strong shadow-[var(--shadow)]" : "border-transparent hover:border-line",
         course.hypothetical && "border-dashed !border-warn/60 bg-warn-soft/40",
       )}

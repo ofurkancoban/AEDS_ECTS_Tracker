@@ -142,7 +142,7 @@ function Palette({ onClose }: { onClose: () => void }) {
   return (
     <div className="fade fixed inset-0 z-[9800] flex items-start justify-center bg-[#14120e]/50 backdrop-blur-[2px] sm:p-6 sm:pt-[10vh]" onMouseDown={onClose}>
       <div
-        className="pop flex h-full w-full max-w-2xl flex-col overflow-hidden border-line bg-panel shadow-[var(--shadow-lg)] sm:h-auto sm:max-h-[78vh] sm:rounded-3xl sm:border"
+        className="pop sheet flex h-full w-full max-w-2xl flex-col overflow-hidden border-line bg-panel shadow-[var(--shadow-lg)] sm:h-auto sm:max-h-[78vh] sm:rounded-3xl sm:border"
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

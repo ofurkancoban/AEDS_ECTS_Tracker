@@ -5,6 +5,7 @@ import { useSemesterDrop } from "../components/dnd";
 import { CategoryDot, Empty, StatusPill, cx } from "../components/ui";
 import { LECTURE_WEEKS, MAX_ECTS_PER_SEMESTER } from "../lib/constants";
 import { gradeTone } from "../lib/grades";
+import { layoutKey, useFlash, useFlip } from "../lib/motion";
 import { PAST_COLLAPSED_KEY } from "../lib/preferences";
 import { allSemesters, compareSemesters, currentSemester, planningSemester } from "../lib/semesters";
 import { readFlag, writeFlag } from "../lib/storage";
@@ -20,6 +21,9 @@ export function Timeline() {
   const plan = planningSemester();
   const [pastCollapsed, setPastCollapsed] = useState(() => readFlag(PAST_COLLAPSED_KEY) === "1");
   const scroller = useRef<HTMLDivElement>(null);
+  // The board itself, not the scroller: positions inside it don't change when it scrolls.
+  const board = useRef<HTMLDivElement>(null);
+  useFlip(board, [layoutKey(courses)]);
 
   const columns = useMemo(() => {
     const set = new Set<string>(courses.map((c) => c.semester));
@@ -94,7 +98,7 @@ export function Timeline() {
       </nav>
 
       <div ref={scroller} className="-mx-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6">
-        <div className="flex min-w-max snap-x snap-mandatory gap-3 sm:snap-none">
+        <div ref={board} className="stagger flex min-w-max snap-x snap-mandatory gap-3 sm:snap-none">
           {visible.map((s) => (
             <div key={s} className="flex gap-3">
               {s === cur && (
@@ -201,15 +205,18 @@ function Card({ course }: { course: Course }) {
   const [code, ...rest] = course.name.split(" - ");
   const title = rest.length ? rest.join(" - ") : course.name;
   const tone = course.status === "completed" ? gradeTone(course.grade) : null;
+  const flash = useFlash(course.id, `${course.status}|${course.grade}|${course.semester}|${course.category}|${course.ects}`);
   return (
     <div
       draggable={!course.hypothetical}
       onDragStart={(e) => startCourseDrag(e, course)}
       onClick={() => setMoveTarget(course)}
+      data-flip-id={course.id}
       title="Tap to move or edit. Drag (or long-press on touch) to another semester."
       className={cx(
         "density-card relative cursor-grab overflow-hidden rounded-2xl border bg-panel p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-line-strong active:cursor-grabbing",
         course.hypothetical ? "border-dashed border-warn/60" : "border-line",
+        flash && "flash",
       )}
     >
       {/* Grade strip: the colour scale at a glance. */}

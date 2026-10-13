@@ -76,3 +76,10 @@ export async function noHorizontalScroll(page: Page) {
   const [scroll, client] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(scroll).toBeLessThanOrEqual(client);
 }
+
+/** Waits until entrance animations are over (endless ones like a pulsing ring don't count). */
+export async function settle(page: Page) {
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity),
+  );
+}

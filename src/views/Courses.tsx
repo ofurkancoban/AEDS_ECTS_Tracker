@@ -1,9 +1,10 @@
 import { BookOpenCheck, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CourseRow } from "../components/CourseRow";
 import { OpenPanel } from "../components/OpenPanel";
 import { useCategoryDrop } from "../components/dnd";
-import { Bar, CategoryDot, Empty, cx } from "../components/ui";
+import { Bar, CategoryDot, Empty, SlidingPill, cx } from "../components/ui";
+import { layoutKey, useFlip } from "../lib/motion";
 import type { CategoryStats } from "../lib/stats";
 import type { Status } from "../lib/types";
 import { useTracker } from "../state";
@@ -16,6 +17,11 @@ export function Courses() {
   const [filter, setFilter] = useState<Filter>("all");
   const q = query.trim().toLowerCase();
   const match = (name: string, status: Status) => (!q || name.toLowerCase().includes(q)) && (filter === "all" || filter === status);
+
+  const filters = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  // Rows glide to their new place when a course moves, is removed or the filter changes.
+  useFlip(list, [layoutKey(courses), filter, q]);
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { all: courses.length, planned: 0, "in-progress": 0, completed: 0 };
@@ -30,14 +36,16 @@ export function Courses() {
           <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-faint" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter your courses" className="field h-10 w-full !pl-10" />
         </div>
-        <div className="scrollbar-none flex gap-1 overflow-x-auto rounded-xl border border-line bg-panel p-1">
+        <div ref={filters} className="scrollbar-none relative flex gap-1 overflow-x-auto rounded-xl border border-line bg-panel p-1">
+          <SlidingPill group={filters} active={filter} className="rounded-lg bg-ink" />
           {(["all", "completed", "in-progress", "planned"] as Filter[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
+              data-active={filter === f}
               className={cx(
-                "h-8 shrink-0 cursor-pointer rounded-lg px-3 text-meta font-medium transition",
-                filter === f ? "bg-ink text-paper" : "text-muted hover:text-ink",
+                "relative h-8 shrink-0 cursor-pointer rounded-lg px-3 text-meta font-medium transition-colors",
+                filter === f ? "text-paper" : "text-muted hover:text-ink",
               )}
             >
               {f === "all" ? "All" : f === "in-progress" ? "In progress" : f[0].toUpperCase() + f.slice(1)}
@@ -53,7 +61,7 @@ export function Courses() {
         </Empty>
       )}
 
-      <div className="grid grid-cols-1 gap-4">
+      <div ref={list} className="stagger grid grid-cols-1 gap-4">
         {stats.categories
           .filter((c) => !c.excludedFromTotal || c.items.length || courses.length)
           .map((c) => (
