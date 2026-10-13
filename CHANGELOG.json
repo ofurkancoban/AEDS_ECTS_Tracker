@@ -18,6 +18,7 @@
       "CSV import understands files saved by Excel with German settings (semicolons, decimal commas)",
       "A damaged backup file or saved entry can no longer break the app; unreadable entries are skipped and reported",
       "Undo from the 'Removed' message now always brings back that course, and the countdown shows how long ago a passed graduation date was",
+      "AEDS Assistant answers now appear word by word as they are written, with a short note on what it is doing first (understanding, searching, writing). If the connection drops, the part already written stays and Try again asks once more",
       "AEDS Assistant answers now show their sources: tap a [1] marker to read the cited passage and open the document, or expand Sources to see every document and page used",
       "New 'Workload by semester' in the Planner shows credits, weekly hours and end-of-term exams per semester, and suggests moving a course when a semester is overloaded",
       "Print or save as PDF now creates a one-page-style progress report (progress ring, requirements, compulsory modules, courses by semester and the suggested schedule) for advising meetings",

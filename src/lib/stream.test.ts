@@ -1,0 +1,153 @@
+// Streaming answers from /chat/stream: SSE parsing, the client and its fallbacks.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AEDS_RAG_BASE, closeOpenBold, formatAnswer, loadMessages, loadThreadId, parseSse, saveMessages, streamChat, StreamInterrupted } from "./assistant";
+
+const ev = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+
+/** A response whose body arrives in the given chunks; `fail` errors the stream after them. */
+function chunked(chunks: string[], fail = false): Response {
+  const enc = new TextEncoder();
+  let i = 0;
+  // One chunk per read, like a network; erroring in start() would discard queued chunks.
+  return new Response(
+    new ReadableStream({
+      pull(c) {
+        if (i < chunks.length) c.enqueue(enc.encode(chunks[i++]));
+        else if (fail) c.error(new Error("network down"));
+        else c.close();
+      },
+    }),
+    { status: 200, headers: { "Content-Type": "text/event-stream" } },
+  );
+}
+
+let urls: string[];
+function mockFetch(chat: () => Response) {
+  urls = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      urls.push(url);
+      if (url.endsWith("/auth/guest")) return new Response(JSON.stringify({ access_token: "tok" }), { status: 200 });
+      return chat();
+    }),
+  );
+}
+
+beforeEach(() => localStorage.clear());
+afterEach(() => vi.unstubAllGlobals());
+
+describe("parseSse", () => {
+  it("returns complete events and keeps the unfinished rest", () => {
+    const { events, rest } = parseSse(ev("token", { text: "a" }) + "event: tok");
+    expect(events).toEqual([{ event: "token", data: '{"text":"a"}' }]);
+    expect(rest).toBe("event: tok");
+  });
+
+  it("handles CRLF, comments, defaults and multi-line data", () => {
+    const { events } = parseSse(": keep-alive\r\n\r\ndata: one\r\ndata: two\r\n\r\nevent:x\ndata:{}\n\n");
+    expect(events).toEqual([
+      { event: "message", data: "one\ntwo" },
+      { event: "x", data: "{}" },
+    ]);
+  });
+});
+
+describe("streamChat", () => {
+  it("reports stages and tokens in order, even when chunks cut through events", async () => {
+    const all =
+      ev("stage", { stage: "searching" }) +
+      ev("token", { text: "Thirty" }) +
+      ev("token", { text: " ECTS [1]" }) +
+      ev("done", { final_answer: "Thirty ECTS [1].", thread_id: "th9", sources: [{ title: "Regs" }], retrieval: [{ text: "p" }], query_log_id: 5 });
+    const pieces = all.match(/[\s\S]{1,9}/g)!;
+    mockFetch(() => chunked(pieces));
+    const seen: string[] = [];
+    const res = await streamChat("Q", { onStage: (s) => seen.push("stage:" + s), onToken: (t) => seen.push(t) });
+    expect(seen).toEqual(["stage:searching", "Thirty", " ECTS [1]"]);
+    expect(res).toMatchObject({ answer: "Thirty ECTS [1].", thread_id: "th9", query_log_id: 5 });
+    expect(res.sources).toHaveLength(1);
+    expect(loadThreadId()).toBe("th9");
+    expect(urls).toEqual([AEDS_RAG_BASE + "/auth/guest", AEDS_RAG_BASE + "/chat/stream"]);
+  });
+
+  it("accepts a cached answer that only sends done", async () => {
+    mockFetch(() => chunked([ev("done", { final_answer: "From cache", thread_id: "t", cached: true })]));
+    const onToken = vi.fn();
+    await expect(streamChat("Q", { onToken })).resolves.toMatchObject({ answer: "From cache" });
+    expect(onToken).not.toHaveBeenCalled();
+  });
+
+  it("parses a last event without the closing blank line", async () => {
+    mockFetch(() => chunked([ev("token", { text: "x" }) + 'event: done\ndata: {"final_answer":"x","thread_id":"t"}']));
+    await expect(streamChat("Q")).resolves.toMatchObject({ answer: "x" });
+  });
+
+  it("keeps the partial answer when the connection drops", async () => {
+    mockFetch(() => chunked([ev("token", { text: "Half an" }), ev("token", { text: " answer" })], true));
+    const err = await streamChat("Q").catch((e) => e);
+    expect(err).toBeInstanceOf(StreamInterrupted);
+    expect((err as StreamInterrupted).partial).toBe("Half an answer");
+  });
+
+  it("treats a stream that ends without done as interrupted", async () => {
+    mockFetch(() => chunked([ev("stage", { stage: "searching" })]));
+    const err = await streamChat("Q").catch((e) => e);
+    expect(err).toBeInstanceOf(StreamInterrupted);
+    expect((err as StreamInterrupted).partial).toBe("");
+  });
+
+  it("ignores events it can't read", async () => {
+    mockFetch(() => chunked(["event: token\ndata: {broken\n\n", ev("contribution", { x: 1 }), ev("done", { final_answer: "ok", thread_id: "t" })]));
+    await expect(streamChat("Q")).resolves.toMatchObject({ answer: "ok" });
+  });
+
+  it("gets a new token once when the old one is rejected", async () => {
+    localStorage.setItem("aedsRagToken", "expired");
+    let n = 0;
+    mockFetch(() => (++n === 1 ? new Response("{}", { status: 401 }) : chunked([ev("done", { final_answer: "ok", thread_id: "t" })])));
+    await expect(streamChat("Q")).resolves.toMatchObject({ answer: "ok" });
+    expect(urls.filter((u) => u.endsWith("/chat/stream"))).toHaveLength(2);
+  });
+
+  it("falls back to /chat when the server can't stream", async () => {
+    urls = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        urls.push(url);
+        if (url.endsWith("/auth/guest")) return new Response(JSON.stringify({ access_token: "tok" }), { status: 200 });
+        if (url.endsWith("/chat/stream")) return new Response("{}", { status: 404 });
+        return new Response(JSON.stringify({ answer: "plain", thread_id: "t" }), { status: 200 });
+      }),
+    );
+    await expect(streamChat("Q")).resolves.toMatchObject({ answer: "plain" });
+    expect(urls.at(-1)).toBe(AEDS_RAG_BASE + "/chat");
+  });
+
+  it("surfaces the server's error detail", async () => {
+    mockFetch(() => new Response(JSON.stringify({ detail: "Too many requests" }), { status: 429 }));
+    await expect(streamChat("Q")).rejects.toThrow("Too many requests");
+  });
+});
+
+describe("saving a streamed conversation", () => {
+  it("skips an answer still arriving and drops the stage", () => {
+    saveMessages([
+      { role: "user", text: "Q" },
+      { role: "assistant", text: "Part", streaming: true, stage: "writing" },
+    ]);
+    expect(loadMessages()).toEqual([{ role: "user", text: "Q" }]);
+    saveMessages([{ role: "assistant", text: "Part", interrupted: true, stage: "writing" }]);
+    expect(loadMessages()).toEqual([{ role: "assistant", text: "Part", interrupted: true }]);
+  });
+});
+
+describe("closeOpenBold", () => {
+  it("closes a bold that is still being written", () => {
+    expect(closeOpenBold("An exam is **deemed")).toBe("An exam is **deemed**");
+    expect(formatAnswer(closeOpenBold("An exam is **deemed"))).toContain("<b>deemed</b>");
+    expect(closeOpenBold("**done** and more")).toBe("**done** and more");
+    expect(closeOpenBold("**open on an earlier line\nnext")).toBe("**open on an earlier line\nnext");
+  });
+});

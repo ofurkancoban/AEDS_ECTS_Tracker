@@ -1,21 +1,24 @@
-import { ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, MessageCircle, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, MessageCircle, RotateCw, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AEDS_RAG_WEB,
   GREETING,
+  STAGE_LABELS,
   SUGGESTIONS,
+  StreamInterrupted,
   buildCourseContext,
   clearConversation,
+  closeOpenBold,
   compactPassages,
   escapeHtml,
   formatAnswer,
   loadIncludeCourses,
   loadMessages,
-  postChat,
   saveIncludeCourses,
   saveMessages,
   sendFeedback,
+  streamChat,
   withContext,
   type ChatMessage,
 } from "../lib/assistant";
@@ -81,10 +84,16 @@ export default function Assistant() {
 
   useEffect(() => saveMessages(messages), [messages]);
 
+  // Follow the answer as it grows, unless the reader scrolled up to read something.
+  const stick = useRef(true);
+  const onScroll = () => {
+    const b = bodyRef.current;
+    if (b) stick.current = b.scrollHeight - b.scrollTop - b.clientHeight < 48;
+  };
   useLayoutEffect(() => {
     const b = bodyRef.current;
-    if (b) b.scrollTop = b.scrollHeight;
-  }, [messages, sending, open]);
+    if (b && stick.current) b.scrollTop = b.scrollHeight;
+  }, [messages, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -106,24 +115,65 @@ export default function Assistant() {
     ta.style.height = Math.min(100, ta.scrollHeight) + "px";
   }, [input]);
 
-  const send = async (raw?: string) => {
-    const text = (raw ?? input).trim();
-    if (!text || sending) return;
-    setInput("");
+  // Patches the answer that is currently arriving (always the last message).
+  const patchLast = (f: (m: ChatMessage) => ChatMessage) =>
+    setMessages((all) => (all.length && all[all.length - 1].streaming ? [...all.slice(0, -1), f(all[all.length - 1])] : all));
+
+  const ask = async (text: string) => {
     setSending(true);
-    setMessages((m) => [...m, { role: "user", text }]);
+    stick.current = true;
+    setMessages((m) => [...m, { role: "assistant", text: "", streaming: true, stage: "understanding" }]);
     const message = include ? withContext(text, buildCourseContext(courses, state.targetGrade)) : text;
+    // Tokens arrive faster than the screen refreshes; render at most once per frame.
+    let pending = "";
+    let frame = 0;
+    const flush = () => {
+      frame = 0;
+      const add = pending;
+      pending = "";
+      if (add) patchLast((m) => ({ ...m, text: m.text + add, stage: "writing" }));
+    };
     try {
-      const res = await postChat(message);
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", text: res.answer, sources: res.sources || [], retrieval: compactPassages(res.retrieval), queryLogId: res.query_log_id || null },
-      ]);
+      const res = await streamChat(message, {
+        onStage: (stage) => patchLast((m) => ({ ...m, stage })),
+        onToken: (t) => {
+          pending += t;
+          if (!frame) frame = requestAnimationFrame(flush);
+        },
+      });
+      cancelAnimationFrame(frame);
+      // The server's final text replaces the streamed one (it may tidy it up).
+      patchLast(() => ({ role: "assistant", text: res.answer, sources: res.sources || [], retrieval: compactPassages(res.retrieval), queryLogId: res.query_log_id || null }));
     } catch (err) {
-      setMessages((m) => [...m, { role: "system", text: err instanceof Error && err.message ? err.message : "Something went wrong, please try again." }]);
+      cancelAnimationFrame(frame);
+      if (err instanceof StreamInterrupted && err.partial.trim()) {
+        patchLast(() => ({ role: "assistant", text: err.partial, interrupted: true }));
+      } else {
+        setMessages((all) => [
+          ...all.filter((m) => !m.streaming),
+          { role: "system", text: err instanceof Error && err.message ? err.message : "Something went wrong, please try again.", interrupted: err instanceof StreamInterrupted },
+        ]);
+      }
     } finally {
       setSending(false);
     }
+  };
+
+  const send = (raw?: string) => {
+    const text = (raw ?? input).trim();
+    if (!text || sending) return;
+    setInput("");
+    setMessages((m) => [...m, { role: "user", text }]);
+    ask(text);
+  };
+
+  /** Asks the question before an interrupted answer again, replacing that answer. */
+  const retry = (index: number) => {
+    if (sending) return;
+    const question = [...messages.slice(0, index)].reverse().find((m) => m.role === "user");
+    if (!question) return;
+    setMessages((m) => m.filter((_, i) => i !== index));
+    ask(question.text);
   };
 
   const rate = (index: number, rating: 1 | -1) => {
@@ -181,9 +231,9 @@ export default function Assistant() {
           </button>
         </header>
 
-        <div ref={bodyRef} className="scrollbar-none flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-paper px-3.5 py-4">
+        <div ref={bodyRef} onScroll={onScroll} className="scrollbar-none flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-paper px-3.5 py-4">
           {shown.map((m, i) => (
-            <Bubble key={i} msg={m} plain={m.greeting} onRate={(r) => rate(i, r)} />
+            <Bubble key={i} msg={m} plain={m.greeting} onRate={(r) => rate(i, r)} onRetry={sending ? undefined : () => retry(i)} />
           ))}
           {!messages.length && (
             <div className="flex flex-wrap gap-1.5">
@@ -191,13 +241,6 @@ export default function Assistant() {
                 <button key={q} onClick={() => send(q)} className="cursor-pointer rounded-full border border-line bg-panel px-3 py-1.5 text-left text-meta transition hover:border-accent hover:text-accent">
                   {q}
                 </button>
-              ))}
-            </div>
-          )}
-          {sending && (
-            <div className="rise inline-flex items-center gap-1 self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-4 py-3">
-              {[0, 1, 2].map((d) => (
-                <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted" style={{ animationDelay: `${d * 0.15}s` }} />
               ))}
             </div>
           )}
@@ -263,11 +306,37 @@ export default function Assistant() {
   );
 }
 
-function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) => void; plain?: boolean }) {
+function RetryButton({ onRetry }: { onRetry?: () => void }) {
+  if (!onRetry) return null;
+  return (
+    <button onClick={onRetry} className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-1 text-caption font-medium text-ink not-italic hover:border-accent hover:text-accent">
+      <RotateCw size={12} /> Try again
+    </button>
+  );
+}
+
+function Bubble({ msg, onRate, onRetry, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) => void; onRetry?: () => void; plain?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<number | null>(null);
   const [showSources, setShowSources] = useState(false);
-  if (msg.role === "system") return <div className="rise self-start px-1 text-meta text-warn italic">{msg.text}</div>;
+  if (msg.role === "system")
+    return (
+      <div className="rise flex flex-wrap items-center gap-2 self-start px-1 text-meta text-warn italic">
+        {msg.text}
+        {msg.interrupted && <RetryButton onRetry={onRetry} />}
+      </div>
+    );
+  if (msg.streaming && !msg.text)
+    return (
+      <div role="status" className="rise inline-flex items-center gap-2 self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-4 py-2.5 text-meta text-muted">
+        <span className="inline-flex gap-1" aria-hidden>
+          {[0, 1, 2].map((d) => (
+            <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted" style={{ animationDelay: `${d * 0.15}s` }} />
+          ))}
+        </span>
+        {STAGE_LABELS[msg.stage || ""] || "Thinking…"}
+      </div>
+    );
   if (msg.role === "user")
     return (
       <div
@@ -299,8 +368,18 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
     setActive((a) => (a === n ? null : n));
   };
   return (
-    <div className={cx("rise relative max-w-[88%] self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-3.5 pt-2.5 text-body leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.04)]", plain ? "pb-2.5" : "pb-7")}>
-      <div className="md" data-active-cite={active ?? undefined} onClick={onAnswerClick} dangerouslySetInnerHTML={{ __html: formatAnswer(msg.text) }} />
+    <div
+      aria-busy={msg.streaming || undefined}
+      className={cx("rise relative max-w-[88%] self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-3.5 pt-2.5 text-body leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.04)]", plain || msg.streaming ? "pb-2.5" : "pb-7")}
+    >
+      <div className={cx("md", msg.streaming && "streaming")} data-active-cite={active ?? undefined} onClick={onAnswerClick} dangerouslySetInnerHTML={{ __html: formatAnswer(msg.streaming ? closeOpenBold(msg.text) : msg.text) }} />
+
+      {msg.interrupted && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2 text-meta text-warn">
+          <TriangleAlert size={13} /> Connection lost before the answer was complete.
+          <RetryButton onRetry={onRetry} />
+        </div>
+      )}
 
       {cite && (
         <div className="pop mt-2 rounded-xl border border-line bg-panel-2 p-3 text-meta" role="region" aria-label={`Source ${cite.n}`}>
@@ -365,7 +444,7 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
         </div>
       )}
 
-      {!plain && (
+      {!plain && !msg.streaming && (
       <div className="absolute right-1.5 bottom-1 flex items-center text-muted">
         {msg.queryLogId && (
           <>

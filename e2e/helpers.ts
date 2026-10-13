@@ -17,6 +17,17 @@ export interface Course {
   hypothetical?: boolean;
 }
 
+/** The answer as /chat/stream sends it: stages, word-by-word tokens, then done. */
+export function sse(body: Record<string, unknown>): string {
+  const ev = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  const answer = String(body.answer ?? "");
+  return (
+    ["understanding", "searching", "writing"].map((stage) => ev("stage", { stage })).join("") +
+    (answer.match(/\s*\S+/g) || []).map((text) => ev("token", { text })).join("") +
+    ev("done", { ...body, final_answer: answer })
+  );
+}
+
 /** Blocks every third-party call (assistant API, visit counter, ratings) so tests are offline and send nothing real. */
 export async function isolate(page: Page, chat?: (message: string) => { status: number; body: unknown }) {
   await page.route("https://abacus.jasoncameron.dev/**", (r) => r.fulfill({ json: { value: 1234 } }));
@@ -28,7 +39,8 @@ export async function isolate(page: Page, chat?: (message: string) => { status: 
     if (url.endsWith("/chat/feedback")) return r.fulfill({ json: {} });
     const body = r.request().postDataJSON() as { message: string };
     const res = chat ? chat(body.message) : { status: 200, body: { answer: "**Sure.** Take:\n- wir895\n- wir894", thread_id: "t1", query_log_id: 1 } };
-    return r.fulfill({ status: res.status, json: res.body });
+    if (res.status !== 200 || !url.endsWith("/chat/stream")) return r.fulfill({ status: res.status, json: res.body });
+    return r.fulfill({ status: 200, contentType: "text/event-stream", body: sse(res.body as Record<string, unknown>) });
   });
 }
 

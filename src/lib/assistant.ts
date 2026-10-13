@@ -21,6 +21,11 @@ export interface ChatMessage {
   retrieval?: Passage[];
   queryLogId?: string | number | null;
   feedbackRating?: 1 | -1;
+  /** Set while the answer is still arriving (never persisted). */
+  streaming?: boolean;
+  stage?: string;
+  /** The connection dropped before the answer was complete. */
+  interrupted?: boolean;
 }
 
 const K = {
@@ -55,7 +60,8 @@ export function loadMessages(): ChatMessage[] {
     return [];
   }
 }
-export const saveMessages = (m: ChatMessage[]) => set(K.messages, JSON.stringify(m));
+// Answers still arriving are not saved; an interrupted one is kept with its flag.
+export const saveMessages = (m: ChatMessage[]) => set(K.messages, JSON.stringify(m.filter((x) => !x.streaming).map(({ stage: _s, ...x }) => x)));
 export const loadIncludeCourses = () => get(K.include) === "1";
 export const saveIncludeCourses = (v: boolean) => set(K.include, v ? "1" : "0");
 export const loadThreadId = () => get(K.thread);
@@ -80,6 +86,116 @@ export interface ChatResponse {
   sources?: SourceRef[];
   retrieval?: Passage[];
   query_log_id?: string | number | null;
+}
+
+// ---- streaming (POST /chat/stream, Server-Sent Events) -----------------------
+
+export const STAGE_LABELS: Record<string, string> = {
+  understanding: "Understanding your question…",
+  searching: "Searching the programme documents…",
+  ranking: "Picking the most relevant passages…",
+  writing: "Writing…",
+};
+
+export interface StreamHandlers {
+  onStage?: (stage: string) => void;
+  onToken?: (text: string) => void;
+}
+
+/** Thrown when the stream breaks after part of the answer arrived. */
+export class StreamInterrupted extends Error {
+  constructor(public partial: string) {
+    super("The connection was interrupted before the answer was complete.");
+    this.name = "StreamInterrupted";
+  }
+}
+
+/** Splits an SSE buffer into complete events; returns them and the unfinished rest. */
+export function parseSse(buffer: string): { events: { event: string; data: string }[]; rest: string } {
+  const text = buffer.replace(/\r\n?/g, "\n");
+  const events: { event: string; data: string }[] = [];
+  let rest = text;
+  let i: number;
+  while ((i = rest.indexOf("\n\n")) !== -1) {
+    const block = rest.slice(0, i);
+    rest = rest.slice(i + 2);
+    let event = "message";
+    const data: string[] = [];
+    for (const line of block.split("\n")) {
+      if (line.startsWith(":")) continue; // comment / keep-alive
+      const colon = line.indexOf(":");
+      const field = colon === -1 ? line : line.slice(0, colon);
+      const value = colon === -1 ? "" : line.slice(colon + 1).replace(/^ /, "");
+      if (field === "event") event = value;
+      else if (field === "data") data.push(value);
+    }
+    if (data.length) events.push({ event, data: data.join("\n") });
+  }
+  return { events, rest };
+}
+
+/**
+ * Asks via /chat/stream, reporting stages and tokens as they arrive, and
+ * resolves with the same shape as postChat. Falls back to /chat when the
+ * server has no streaming endpoint.
+ */
+export async function streamChat(message: string, handlers: StreamHandlers = {}, retried = false): Promise<ChatResponse> {
+  const token = await ensureToken();
+  const r = await fetch(AEDS_RAG_BASE + "/chat/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, Accept: "text/event-stream" },
+    body: JSON.stringify({ message, thread_id: loadThreadId() }),
+  });
+  if (r.status === 401 && !retried) {
+    set(K.token, null);
+    return streamChat(message, handlers, true);
+  }
+  if (r.status === 404 || r.status === 405) return postChat(message);
+  if (!r.ok || !r.body) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.detail || "Request failed (" + r.status + ")");
+  }
+
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let partial = "";
+  let done: ChatResponse | null = null;
+  try {
+    for (;;) {
+      const { value, done: finished } = await reader.read();
+      buffer += finished ? decoder.decode() : decoder.decode(value, { stream: true });
+      const parsed = parseSse(finished ? buffer + "\n\n" : buffer);
+      buffer = parsed.rest;
+      for (const ev of parsed.events) {
+        let data: Record<string, unknown>;
+        try {
+          data = JSON.parse(ev.data);
+        } catch {
+          continue;
+        }
+        if (ev.event === "stage" && typeof data.stage === "string") handlers.onStage?.(data.stage);
+        else if (ev.event === "token" && typeof data.text === "string") {
+          partial += data.text;
+          handlers.onToken?.(data.text);
+        } else if (ev.event === "done") {
+          done = {
+            answer: String(data.final_answer ?? data.answer ?? partial),
+            thread_id: String(data.thread_id || ""),
+            sources: (data.sources as ChatResponse["sources"]) || [],
+            retrieval: (data.retrieval as ChatResponse["retrieval"]) || [],
+            query_log_id: (data.query_log_id as ChatResponse["query_log_id"]) ?? null,
+          };
+          if (done.thread_id) set(K.thread, done.thread_id);
+        }
+      }
+      if (finished) break;
+    }
+  } catch {
+    if (!done) throw new StreamInterrupted(partial);
+  }
+  if (!done) throw new StreamInterrupted(partial);
+  return done;
 }
 
 export async function postChat(message: string, retried = false): Promise<ChatResponse> {
@@ -232,6 +348,12 @@ function inline(s: string): string {
 }
 
 /** Markdown subset (headings, lists, tables, bold/italic/code/links) to HTML; input is escaped first. */
+/** While an answer is still arriving, closes a bold the last line opened so no stray "**" shows. */
+export function closeOpenBold(text: string): string {
+  const last = text.slice(text.lastIndexOf("\n") + 1);
+  return (last.match(/\*\*/g) || []).length % 2 ? text + "**" : text;
+}
+
 export function formatAnswer(text: string): string {
   const lines = (text || "").replace(/\r\n/g, "\n").split("\n");
   const isTableSep = (l: string) => /^\s*\|?[\s:|-]+\|?\s*$/.test(l) && l.includes("-");

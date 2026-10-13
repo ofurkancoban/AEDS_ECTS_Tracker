@@ -215,6 +215,22 @@ select.field {
 }
 
 /* Assistant answers (rendered from a small markdown subset). */
+.md.streaming > :last-child:not(ul, ol, table, div)::after,
+.md.streaming > :is(ul, ol):last-child > li:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
 .md p {
   margin: 0 0 4px;
 }

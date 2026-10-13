@@ -12,6 +12,39 @@ import sample from "./lib/fixtures/rag-answer.json";
 const saved = (): Course[] => JSON.parse(localStorage.getItem("ects-tracker-state") || '{"courses":[]}').courses;
 let requests: { url: string; body: unknown }[];
 let chatReply: (body: { message: string }) => { status: number; body: unknown };
+// Set to an SSE string to send instead of the stream built from chatReply.
+let rawStream: string | null;
+// When true, /chat/stream stays open and the test feeds it through `live`.
+let manual: boolean;
+let live: ReadableStreamDefaultController<Uint8Array> | null;
+const ev = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+const push = (text: string) => act(async () => live!.enqueue(new TextEncoder().encode(text)));
+
+/** What /chat/stream sends for a /chat-style answer: stages, the answer word by word, then done. */
+function sse(body: Record<string, unknown>): string {
+  const answer = String(body.answer ?? "");
+  const words = answer.match(/\s*\S+/g) || [];
+  return (
+    ["understanding", "searching", "ranking", "writing"].map((stage) => ev("stage", { stage })).join("") +
+    words.map((text) => ev("token", { text })).join("") +
+    ev("done", { ...body, final_answer: answer })
+  );
+}
+
+/** Splits the text into a few chunks (cutting through events) so parsing across reads is exercised. */
+function streamResponse(text: string): Response {
+  const bytes = new TextEncoder().encode(text);
+  const step = Math.max(1, Math.ceil(bytes.length / 7));
+  return new Response(
+    new ReadableStream({
+      start(c) {
+        for (let i = 0; i < bytes.length; i += step) c.enqueue(bytes.slice(i, i + step));
+        c.close();
+      },
+    }),
+    { status: 200, headers: { "Content-Type": "text/event-stream" } },
+  );
+}
 
 beforeEach(() => {
   localStorage.clear();
@@ -25,6 +58,9 @@ beforeEach(() => {
     }),
   );
   requests = [];
+  rawStream = null;
+  manual = false;
+  live = null;
   chatReply = () => ({ status: 200, body: { answer: "**Take** these:\n- wir895\n- wir894", thread_id: "t1", query_log_id: 42 } });
   vi.stubGlobal(
     "fetch",
@@ -32,9 +68,13 @@ beforeEach(() => {
       const body = init?.body ? JSON.parse(init.body as string) : null;
       requests.push({ url, body });
       if (url === AEDS_RAG_BASE + "/auth/guest") return new Response(JSON.stringify({ access_token: "tok" }), { status: 200 });
-      if (url === AEDS_RAG_BASE + "/chat") {
+      if (url === AEDS_RAG_BASE + "/chat/stream") {
+        if (manual)
+          return new Response(new ReadableStream<Uint8Array>({ start: (c) => void (live = c) }), { status: 200, headers: { "Content-Type": "text/event-stream" } });
+        if (rawStream !== null) return streamResponse(rawStream);
         const r = chatReply(body);
-        return new Response(JSON.stringify(r.body), { status: r.status });
+        if (r.status !== 200) return new Response(JSON.stringify(r.body), { status: r.status });
+        return streamResponse(sse(r.body as Record<string, unknown>));
       }
       if (url === AEDS_RAG_BASE + "/chat/feedback") return new Response("{}", { status: 200 });
       return new Response("[]", { status: 404 });
@@ -62,7 +102,7 @@ describe("AEDS Assistant", () => {
     await user.click(within(panel).getByRole("button", { name: "Which courses should I take next semester?" }));
     await waitFor(() => expect(panel.querySelector(".md b")?.textContent).toBe("Take"));
     expect(panel.querySelectorAll(".md li")).toHaveLength(2);
-    const chat = requests.find((r) => r.url.endsWith("/chat"))!;
+    const chat = requests.find((r) => r.url.endsWith("/chat/stream"))!;
     expect(chat.body).toEqual({ message: "Which courses should I take next semester?", thread_id: null });
     expect(JSON.parse(localStorage.getItem("aedsRagMessages")!)).toHaveLength(2);
   });
@@ -72,8 +112,8 @@ describe("AEDS Assistant", () => {
     await user.click(within(panel).getByLabelText("Consider my course list"));
     expect(localStorage.getItem("aedsRagIncludeCourses")).toBe("1");
     await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "What next?{Enter}");
-    await waitFor(() => expect(requests.some((r) => r.url.endsWith("/chat"))).toBe(true));
-    const msg = (requests.find((r) => r.url.endsWith("/chat"))!.body as { message: string }).message;
+    await waitFor(() => expect(requests.some((r) => r.url.endsWith("/chat/stream"))).toBe(true));
+    const msg = (requests.find((r) => r.url.endsWith("/chat/stream"))!.body as { message: string }).message;
     expect(msg.startsWith("My ECTS Tracker progress (6/120 ECTS completed):")).toBe(true);
     expect(msg).toContain("Planned codes by category: economics: wir874");
     expect(msg.endsWith("\n\nQuestion: What next?")).toBe(true);
@@ -86,7 +126,7 @@ describe("AEDS Assistant", () => {
     const box = within(panel).getByPlaceholderText(/Ask about the AEDS programme/);
     await user.type(box, "{Enter}");
     await user.type(box, "line one{Shift>}{Enter}{/Shift}line two");
-    expect(requests.some((r) => r.url.endsWith("/chat"))).toBe(false);
+    expect(requests.some((r) => r.url.endsWith("/chat/stream"))).toBe(false);
     expect((box as HTMLTextAreaElement).value).toBe("line one\nline two");
   });
 
@@ -158,6 +198,85 @@ describe("AEDS Assistant sources", () => {
     const copied = (writeText.mock.calls[0] as unknown as [string])[0];
     expect(copied).not.toMatch(/\[\d+\]/);
     expect(copied).toContain("up to twice");
+  });
+});
+
+describe("AEDS Assistant streaming", () => {
+  const ask = async (user: ReturnType<typeof userEvent.setup>, panel: HTMLElement, q = "How long is the thesis?") => {
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), q + "{Enter}");
+    await waitFor(() => expect(live).not.toBeNull());
+  };
+  const answerText = (panel: HTMLElement) => [...panel.querySelectorAll(".md")].at(-1)?.textContent;
+
+  it("shows what it is doing, then the answer as it arrives, then sources and actions", async () => {
+    manual = true;
+    const { user, panel } = await openAssistant();
+    await ask(user, panel);
+    expect(within(panel).getByRole("status").textContent).toContain("Understanding your question");
+    await push(ev("stage", { stage: "searching" }));
+    expect(within(panel).getByRole("status").textContent).toContain("Searching the programme documents");
+    expect((within(panel).getByRole("button", { name: "Send message" }) as HTMLButtonElement).disabled).toBe(true);
+
+    await push(ev("stage", { stage: "writing" }) + ev("token", { text: "The thesis" }));
+    await waitFor(() => expect(answerText(panel)).toBe("The thesis"));
+    expect(panel.querySelector(".md.streaming")).toBeTruthy();
+    expect(panel.querySelector('[aria-busy="true"]')).toBeTruthy();
+    // No copy or rating while the answer is incomplete, and nothing saved yet.
+    expect(within(panel).queryByRole("button", { name: "Copy message" })).toBeNull();
+    expect(JSON.parse(localStorage.getItem("aedsRagMessages")!)).toHaveLength(1);
+
+    await push(ev("token", { text: " is worth 30" }));
+    await waitFor(() => expect(answerText(panel)).toBe("The thesis is worth 30"));
+
+    await push(ev("done", { ...sample, final_answer: "The thesis is worth **30 ECTS** [1]." }));
+    await act(async () => live!.close());
+    await waitFor(() => expect(panel.querySelector(".md.streaming")).toBeNull());
+    expect(panel.querySelector(".md b")?.textContent).toBe("30 ECTS");
+    expect(within(panel).getByRole("button", { name: "Show source 1" })).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: /Sources \(1\)/ })).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: "Good answer" })).toBeTruthy();
+    const stored = JSON.parse(localStorage.getItem("aedsRagMessages")!);
+    expect(stored[1].text).toBe("The thesis is worth **30 ECTS** [1].");
+    expect(stored[1].streaming).toBeUndefined();
+  });
+
+  it("shows a cached answer that arrives in one piece", async () => {
+    rawStream = ev("done", { final_answer: "Straight from the **cache**.", thread_id: "t", cached: true, query_log_id: 3 });
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Hi{Enter}");
+    await waitFor(() => expect(panel.querySelector(".md b")?.textContent).toBe("cache"));
+    expect(within(panel).queryByRole("status")).toBeNull();
+  });
+
+  it("keeps a half answer when the connection drops and asks again on Try again", async () => {
+    manual = true;
+    const { user, panel } = await openAssistant();
+    await ask(user, panel, "Retakes?");
+    await push(ev("token", { text: "You can retake" }));
+    await act(async () => live!.error(new Error("offline")));
+    expect(await within(panel).findByText(/Connection lost before the answer was complete/)).toBeTruthy();
+    expect(answerText(panel)).toBe("You can retake");
+    expect(JSON.parse(localStorage.getItem("aedsRagMessages")!)[1]).toMatchObject({ text: "You can retake", interrupted: true });
+
+    // Try again asks the same question once more, without a second user bubble.
+    live = null;
+    manual = false;
+    chatReply = () => ({ status: 200, body: { answer: "You can retake twice.", thread_id: "t", query_log_id: 9 } });
+    await user.click(within(panel).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(answerText(panel)).toBe("You can retake twice."));
+    expect(within(panel).queryByText(/Connection lost/)).toBeNull();
+    expect(within(panel).getAllByText("Retakes?")).toHaveLength(1);
+    const asked = requests.filter((r) => r.url.endsWith("/chat/stream")).map((r) => (r.body as { message: string }).message);
+    expect(asked).toEqual(["Retakes?", "Retakes?"]);
+  });
+
+  it("offers Try again when the connection drops before any text", async () => {
+    rawStream = ev("stage", { stage: "searching" });
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Hi{Enter}");
+    expect(await within(panel).findByText(/connection was interrupted/)).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(within(panel).queryByRole("status")).toBeNull();
   });
 });
 
