@@ -1,6 +1,7 @@
 import { copyFileSync, cpSync, existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vitest/config";
+import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -14,16 +15,16 @@ function copyRootDataFiles(): Plugin {
     name: "copy-root-data-files",
     apply: "build",
     closeBundle() {
-      const out = resolve(__dirname, "dist");
+      const out = resolve(import.meta.dirname, "dist");
       for (const file of ROOT_DATA_FILES) {
-        const src = resolve(__dirname, file);
+        const src = resolve(import.meta.dirname, file);
         if (existsSync(src)) copyFileSync(src, resolve(out, file));
       }
       const legacyOut = resolve(out, "legacy");
       mkdirSync(legacyOut, { recursive: true });
-      cpSync(resolve(__dirname, "legacy"), legacyOut, { recursive: true });
+      cpSync(resolve(import.meta.dirname, "legacy"), legacyOut, { recursive: true });
       for (const file of ["catalog.csv", "CHANGELOG.json", "favicon.ico", "favicon-512.png"]) {
-        copyFileSync(resolve(__dirname, file), resolve(legacyOut, file));
+        copyFileSync(resolve(import.meta.dirname, file), resolve(legacyOut, file));
       }
     },
   };
@@ -32,5 +33,15 @@ function copyRootDataFiles(): Plugin {
 export default defineConfig({
   base: "./",
   plugins: [react(), tailwindcss(), copyRootDataFiles()],
-  build: { target: "es2020", chunkSizeWarningLimit: 900 },
+  test: { environment: "happy-dom", include: ["src/**/*.test.ts"] },
+  build: {
+    target: "es2020",
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        // React rarely changes between deploys, so keep it cacheable on its own.
+        manualChunks: (id) => (/node_modules\/(react|react-dom|scheduler)\//.test(id) ? "react" : undefined),
+      },
+    },
+  },
 });

@@ -122,7 +122,7 @@ function Column({
 }
 
 function Card({ course }: { course: Course }) {
-  const { updateCourse } = useTracker();
+  const { updateCourse, setMoveTarget } = useTracker();
   const [code, ...rest] = course.name.split(" - ");
   const title = rest.length ? rest.join(" - ") : course.name;
   const failed = isFail(course);
@@ -130,6 +130,11 @@ function Card({ course }: { course: Course }) {
     <div
       draggable={!course.hypothetical}
       onDragStart={(e) => startCourseDrag(e, course)}
+      onClick={() => setMoveTarget(course)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && setMoveTarget(course)}
+      title="Tap to move or edit. Drag (or long-press on touch) to another semester."
       className={cx(
         "cursor-grab rounded-2xl border bg-panel p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-line-strong active:cursor-grabbing",
         course.hypothetical ? "border-dashed border-warn/60" : "border-line",
@@ -142,12 +147,14 @@ function Card({ course }: { course: Course }) {
       </div>
       <div className="mt-1 line-clamp-2 text-[13.5px] leading-snug font-medium">{title}</div>
       <div className="mt-2 flex items-center justify-between">
+        <span onClick={(e) => e.stopPropagation()}>
         <StatusPill
           status={course.status}
           onClick={() =>
             updateCourse(course.id, { status: course.status === "planned" ? "in-progress" : course.status === "in-progress" ? "completed" : "planned" })
           }
         />
+        </span>
         {course.status === "completed" && course.grade && (
           <span className={cx("num text-[13px] font-semibold", failed ? "text-danger" : "text-accent")}>{course.grade}</span>
         )}

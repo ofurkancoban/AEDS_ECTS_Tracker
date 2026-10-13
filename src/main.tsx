@@ -7,7 +7,7 @@ import "./styles.css";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { loadCatalog } from "./lib/catalog";
-import { initAssistant } from "./widgets/legacyWidgets";
+import { installTouchDrag } from "./lib/touchDrag";
 
 // Apply the saved theme before first paint to avoid a light flash.
 try {
@@ -21,8 +21,11 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 loadCatalog();
 
-try {
-  initAssistant();
-} catch (e) {
-  console.error("AEDS Assistant failed to start", e);
+installTouchDrag();
+
+// Offline support: cache the app shell and data files (production builds only).
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
 }

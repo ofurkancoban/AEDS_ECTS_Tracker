@@ -21,7 +21,12 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 
 - A dashboard with five views: Overview (progress ring, GPA, target GPA, semester load, countdown, alerts, per-category cards and charts), Courses (grouped by requirement), Timeline (one column per semester, drag cards to reschedule), Planner (next-semester options and the graduation path) and Checklist
 - A command palette for adding courses (Ctrl/Cmd + K): search the whole catalog by code, title or lecturer, then pick the category, semester, status and grade in one step
-- Sidebar navigation on desktop, a bottom tab bar with a central add button on mobile, light and dark themes, keyboard shortcuts (1-5 to switch views, Ctrl/Cmd + Z to undo a removal)
+- Sidebar navigation on desktop, a bottom tab bar with a central add button on mobile, light and dark themes, keyboard shortcuts (1-6 to switch views)
+- A Catalog view to browse every module with search (code, title, lecturer, exam type, learning outcomes), filters (category, language, offering term, open this semester, compulsory, hide taken) and sorting by difficulty or recency
+- A grade simulator in the Planner: pick an expected grade for every open course (and an average for unplanned credits) to see the projected final GPA against your target
+- Touch support on phones: long-press a card to drag it, or tap it to move it to another semester, change its status, grade or category
+- Undo and redo for every edit (Ctrl/Cmd + Z, Ctrl/Cmd + Shift + Z), not just removals
+- Works offline once opened: a service worker caches the app and the catalog, so the installed app opens without a connection
 - The previous interface is still available at `/legacy/` ("Classic view" in the footer) and reads the same saved data
 
 **Credit tracking**
@@ -95,6 +100,7 @@ The module catalog lives in `catalog.csv` (one row per module: `category, code, 
 - React 18 + TypeScript, built with Vite and styled with Tailwind CSS v4; icons from lucide-react, self-hosted Fraunces, Inter and JetBrains Mono fonts
 - `src/lib/` holds the framework-free logic (catalog parsing, semesters, GPA and requirement stats, planning algorithms, storage, import/export), ported one to one from the classic UI so both give the same answers
 - Data stays in the same `localStorage` key and format as before, so switching between the new and the classic view loses nothing
+- Unit tests for the logic layer with Vitest (`npm test`), run in CI before every deploy
 - Development: `npm install`, `npm run dev`; production build: `npm run build` (output in `dist/`, deployed to GitHub Pages by `.github/workflows/deploy-pages.yml`)
 - The QR code encoder is a from-scratch implementation of the relevant parts of ISO/IEC 18004 (versions 1-10, error correction level L), validated by round-tripping through an independent decoder
 

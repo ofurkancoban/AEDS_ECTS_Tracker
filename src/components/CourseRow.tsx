@@ -1,6 +1,7 @@
 import {
   ArrowRightLeft,
   BookOpen,
+  CalendarDays,
   ChevronDown,
   Clock,
   ExternalLink,
@@ -40,7 +41,7 @@ export function startCourseDrag(e: DragEvent, c: Course) {
 }
 
 export function CourseRow({ course, showCategory = false, compact = false }: { course: Course; showCategory?: boolean; compact?: boolean }) {
-  const { updateCourse, removeCourse, stats, catalog, whatIf } = useTracker();
+  const { updateCourse, removeCourse, stats, catalog, whatIf, setMoveTarget } = useTracker();
   const ratings = useRatings();
   const [open, setOpen] = useState(false);
   const code = resolveCode(course.name, catalog) || codeOf(course.name);
@@ -159,6 +160,16 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
                     </span>
                   </MenuItem>
                 ))}
+                <MenuDivider />
+                <MenuItem
+                  icon={<CalendarDays size={15} />}
+                  onClick={() => {
+                    close();
+                    setMoveTarget(course);
+                  }}
+                >
+                  Move to semester
+                </MenuItem>
                 {moveTargets(course).length > 0 && (
                   <>
                     <MenuDivider />

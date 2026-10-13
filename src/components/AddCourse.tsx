@@ -143,6 +143,7 @@ function Palette({ onClose }: { onClose: () => void }) {
         className="pop flex h-full w-full max-w-2xl flex-col overflow-hidden border-line bg-panel shadow-[var(--shadow-lg)] sm:h-auto sm:max-h-[78vh] sm:rounded-3xl sm:border"
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="Add a course"
       >
         {picked ? (

@@ -10,7 +10,10 @@ import {
   LayoutDashboard,
   Library,
   ListChecks,
+  Menu as MenuIcon,
   Moon,
+  Redo2,
+  Search,
   Plus,
   Printer,
   QrCode,
@@ -24,27 +27,34 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { AddCourseDialog } from "./components/AddCourse";
+import { MoveSheet } from "./components/MoveSheet";
 import { ChangelogModal, HowItWorksModal, ShareModal, useChangelog, useDataActions, useQrImport } from "./components/DataActions";
-import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Toasts, cx } from "./components/ui";
+import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, Toasts, cx } from "./components/ui";
 import { TOTAL_REQUIRED } from "./lib/constants";
 import { currentSemester } from "./lib/semesters";
 import { hitGlobalCounter } from "./lib/storage";
 import { TrackerProvider, useTracker, type View } from "./state";
-import { Checklist } from "./views/Checklist";
 import { Courses } from "./views/Courses";
 import { Overview } from "./views/Overview";
-import { Planner } from "./views/Planner";
-import { Timeline } from "./views/Timeline";
 
 const NAV: { id: View; label: string; icon: ReactNode; blurb: string }[] = [
   { id: "overview", label: "Overview", icon: <LayoutDashboard size={18} />, blurb: "Your progress at a glance" },
   { id: "courses", label: "Courses", icon: <Library size={18} />, blurb: "Everything you've taken and planned, by requirement" },
   { id: "timeline", label: "Timeline", icon: <CalendarDays size={18} />, blurb: "Semester by semester. Drag cards to reschedule" },
-  { id: "planner", label: "Planner", icon: <Route size={18} />, blurb: "What to take next and how to finish" },
+  { id: "planner", label: "Planner", icon: <Route size={18} />, blurb: "What to take next, how to finish, and what grades you need" },
+  { id: "catalog", label: "Catalog", icon: <Search size={18} />, blurb: "Every AEDS module, with filters, offering history and difficulty" },
   { id: "checklist", label: "Checklist", icon: <ListChecks size={18} />, blurb: "Graduation requirements, ticked off" },
 ];
+
+// Loaded on demand so they don't weigh on the first paint.
+const Assistant = lazy(() => import("./components/Assistant"));
+const Timeline = lazy(() => import("./views/Timeline").then((m) => ({ default: m.Timeline })));
+const Planner = lazy(() => import("./views/Planner").then((m) => ({ default: m.Planner })));
+const Catalog = lazy(() => import("./views/Catalog").then((m) => ({ default: m.Catalog })));
+const Checklist = lazy(() => import("./views/Checklist").then((m) => ({ default: m.Checklist })));
+const StudipSync = lazy(() => import("./components/StudipSync"));
 
 export default function App() {
   return (
@@ -60,14 +70,22 @@ interface InstallPromptEvent extends Event {
 }
 
 function Shell() {
-  const { view, setView, state, patch, whatIf, setWhatIf, openAdd, stats, undo, undoCount, courses } = useTracker();
+  const { view, setView, state, patch, whatIf, setWhatIf, openAdd, stats, undo, redo, undoCount, redoCount, courses, studipOpen, setStudipOpen, toast } = useTracker();
+  const [assistantReady, setAssistantReady] = useState(false);
   const data = useDataActions();
   const changelog = useChangelog();
   const [howOpen, setHowOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [visits, setVisits] = useState<number | null>(null);
   const [installEvt, setInstallEvt] = useState<InstallPromptEvent | null>(null);
   useQrImport();
+
+  useEffect(() => {
+    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    if (idle) idle(() => setAssistantReady(true));
+    else window.setTimeout(() => setAssistantReady(true), 800);
+  }, []);
 
   useEffect(() => {
     hitGlobalCounter().then(setVisits);
@@ -89,16 +107,23 @@ function Shell() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         openAdd();
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !typing && undoCount > 0) {
+      } else if ((e.metaKey || e.ctrlKey) && !typing && ((e.key.toLowerCase() === "z" && e.shiftKey) || e.key.toLowerCase() === "y")) {
+        if (!redoCount) return;
+        e.preventDefault();
+        redo();
+        toast({ message: "Redone" });
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !typing) {
+        if (!undoCount) return;
         e.preventDefault();
         undo();
-      } else if (!typing && !e.metaKey && !e.ctrlKey && !e.altKey && /^[1-5]$/.test(e.key) && !document.querySelector("[role=dialog]")) {
+        toast({ message: "Undone", action: { label: "Redo", run: redo } });
+      } else if (!typing && !e.metaKey && !e.ctrlKey && !e.altKey && /^[1-6]$/.test(e.key) && !document.querySelector('[aria-modal="true"]')) {
         setView(NAV[parseInt(e.key, 10) - 1].id);
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [openAdd, undo, undoCount, setView]);
+  }, [openAdd, undo, redo, undoCount, redoCount, setView, toast]);
 
   const isStandalone =
     (typeof window !== "undefined" && window.matchMedia?.("(display-mode: standalone)").matches) ||
@@ -230,17 +255,12 @@ function Shell() {
             <p className="truncate text-[12.5px] text-muted">{current.blurb}</p>
           </div>
           <div className="flex-1 lg:hidden" />
-          {undoCount > 0 && (
-            <IconButton label="Undo last removal (Ctrl/Cmd+Z)" onClick={undo}>
+          <div className="flex items-center">
+            <IconButton label="Undo (Ctrl/Cmd+Z)" onClick={undo} disabled={!undoCount} className="disabled:pointer-events-none disabled:opacity-30">
               <Undo2 size={17} />
             </IconButton>
-          )}
-          <div className="flex items-center gap-1 lg:hidden">
-            <IconButton label="How it works" onClick={() => setHowOpen(true)}>
-              <CircleHelp size={18} />
-            </IconButton>
-            <IconButton label="Toggle theme" onClick={toggleTheme}>
-              {state.theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            <IconButton label="Redo (Ctrl/Cmd+Shift+Z)" onClick={redo} disabled={!redoCount} className="disabled:pointer-events-none disabled:opacity-30">
+              <Redo2 size={17} />
             </IconButton>
           </div>
           {dataMenu}
@@ -294,13 +314,16 @@ function Shell() {
           </div>
         )}
 
+        <Suspense fallback={<div className="py-20 text-center text-[13px] text-faint">Loading…</div>}>
         <div key={view} className="rise">
           {view === "overview" && <Overview onBackup={data.exportJson} />}
           {view === "courses" && <Courses />}
           {view === "timeline" && <Timeline />}
           {view === "planner" && <Planner />}
+          {view === "catalog" && <Catalog />}
           {view === "checklist" && <Checklist />}
         </div>
+        </Suspense>
 
         <Footer visits={visits} usage={state.usageCount} />
       </main>
@@ -320,11 +343,59 @@ function Shell() {
               <Plus size={24} />
             </button>
           </div>
-          {NAV.slice(2, 4).map((n) => (
-            <NavTab key={n.id} item={n} active={view === n.id} onClick={() => setView(n.id)} />
-          ))}
+          <NavTab item={NAV.find((n) => n.id === "planner")!} active={view === "planner"} onClick={() => setView("planner")} />
+          <NavTab
+            item={{ id: "overview", label: "More", icon: <MenuIcon size={18} />, blurb: "" }}
+            active={moreOpen || ["timeline", "catalog", "checklist"].includes(view)}
+            onClick={() => setMoreOpen(true)}
+          />
         </div>
       </nav>
+
+      <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="More" width="max-w-md">
+        <div className="grid grid-cols-3 gap-2">
+          {NAV.filter((n) => ["timeline", "catalog", "checklist"].includes(n.id)).map((n) => (
+            <button
+              key={n.id}
+              onClick={() => {
+                setMoreOpen(false);
+                setView(n.id);
+              }}
+              className={cx(
+                "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border px-2 py-4 text-[13px] font-medium",
+                view === n.id ? "border-accent bg-accent-soft text-accent" : "border-line",
+              )}
+            >
+              {n.icon}
+              {n.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-1 border-t border-line pt-3 text-[14px]">
+          <SideLink
+            icon={<CircleHelp size={17} />}
+            onClick={() => {
+              setMoreOpen(false);
+              setHowOpen(true);
+            }}
+          >
+            How it works
+          </SideLink>
+          <SideLink
+            icon={<Gift size={17} />}
+            dot={changelog.unseen}
+            onClick={() => {
+              setMoreOpen(false);
+              setLogOpen(true);
+            }}
+          >
+            What's new
+          </SideLink>
+          <SideLink icon={state.theme === "dark" ? <Sun size={17} /> : <Moon size={17} />} onClick={toggleTheme}>
+            {state.theme === "dark" ? "Light mode" : "Dark mode"}
+          </SideLink>
+        </div>
+      </Modal>
 
       {data.fileInputs}
       <AddCourseDialog />
@@ -338,8 +409,13 @@ function Shell() {
           changelog.markSeen();
         }}
       />
+      <MoveSheet />
       <ConfirmDialog />
       <Toasts />
+      <Suspense fallback={null}>
+        {assistantReady && <Assistant />}
+        {studipOpen && <StudipSync open onClose={() => setStudipOpen(false)} />}
+      </Suspense>
     </div>
   );
 }

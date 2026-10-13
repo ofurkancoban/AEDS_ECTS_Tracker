@@ -5,7 +5,7 @@ import { loadState, readFlag, saveState, writeFlag } from "./lib/storage";
 import type { Catalog } from "./lib/catalog";
 import type { Course, TrackerState } from "./lib/types";
 
-export type View = "overview" | "courses" | "timeline" | "planner" | "checklist";
+export type View = "overview" | "courses" | "timeline" | "planner" | "catalog" | "checklist";
 
 export interface Toast {
   id: number;
@@ -32,7 +32,13 @@ interface TrackerCtx {
   updateCourse: (id: string, p: Partial<Course>) => void;
   removeCourse: (id: string) => void;
   undo: () => void;
+  redo: () => void;
   undoCount: number;
+  redoCount: number;
+  studipOpen: boolean;
+  setStudipOpen: (v: boolean) => void;
+  moveTarget: Course | null;
+  setMoveTarget: (c: Course | null) => void;
   whatIf: boolean;
   setWhatIf: (v: boolean) => void;
   view: View;
@@ -64,7 +70,9 @@ export function useTracker(): TrackerCtx {
   return c;
 }
 
-const UNDO_LIMIT = 10;
+const UNDO_LIMIT = 30;
+// Edits closer together than this (e.g. typing a note) undo as one step.
+const COALESCE_MS = 800;
 const VIEW_KEY = "ects-tracker-view";
 
 export function TrackerProvider({ children }: { children: ReactNode }) {
@@ -81,7 +89,12 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const [addPreset, setAddPreset] = useState<AddPreset | null>(null);
   const [backupReminderDismissed, setBackupReminderDismissed] = useState(false);
   const undoStack = useRef<Course[][]>([]);
+  const redoStack = useRef<Course[][]>([]);
+  const lastRecord = useRef(0);
   const [undoCount, setUndoCount] = useState(0);
+  const [redoCount, setRedoCount] = useState(0);
+  const [studipOpen, setStudipOpen] = useState(false);
+  const [moveTarget, setMoveTarget] = useState<Course | null>(null);
   const toastId = useRef(0);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -108,7 +121,21 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     if (meta) meta.setAttribute("content", state.theme === "dark" ? "#13161d" : "#f6f3ec");
   }, [state.theme]);
 
+  const syncCounts = () => {
+    setUndoCount(undoStack.current.length);
+    setRedoCount(redoStack.current.length);
+  };
+
+  // Every user edit goes through here, so all of them can be undone.
   const setCourses = useCallback((fn: (prev: Course[]) => Course[]) => {
+    const now = Date.now();
+    if (now - lastRecord.current > COALESCE_MS) {
+      undoStack.current.push(stateRef.current.courses);
+      if (undoStack.current.length > UNDO_LIMIT) undoStack.current.shift();
+    }
+    lastRecord.current = now;
+    redoStack.current = [];
+    syncCounts();
     setState((s) => ({ ...s, courses: fn(s.courses) }));
   }, []);
 
@@ -130,19 +157,28 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const undo = useCallback(() => {
     const prev = undoStack.current.pop();
     if (!prev) return;
-    setUndoCount(undoStack.current.length);
-    setCourses(() => prev);
-  }, [setCourses]);
+    redoStack.current.push(stateRef.current.courses);
+    lastRecord.current = 0;
+    syncCounts();
+    setState((s) => ({ ...s, courses: prev }));
+  }, []);
+
+  const redo = useCallback(() => {
+    const next = redoStack.current.pop();
+    if (!next) return;
+    undoStack.current.push(stateRef.current.courses);
+    lastRecord.current = 0;
+    syncCounts();
+    setState((s) => ({ ...s, courses: next }));
+  }, []);
 
   const removeCourse = useCallback(
     (id: string) => {
-      const list = stateRef.current.courses;
-      const target = list.find((c) => c.id === id);
+      const target = stateRef.current.courses.find((c) => c.id === id);
       if (!target) return;
-      undoStack.current.push(list);
-      if (undoStack.current.length > UNDO_LIMIT) undoStack.current.shift();
-      setUndoCount(undoStack.current.length);
+      lastRecord.current = 0;
       setCourses((cs) => cs.filter((c) => c.id !== id));
+      lastRecord.current = 0;
       toast({ message: `Removed ${target.name}`, action: { label: "Undo", run: undo } });
     },
     [setCourses, toast, undo],
@@ -203,7 +239,13 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     updateCourse,
     removeCourse,
     undo,
+    redo,
     undoCount,
+    redoCount,
+    studipOpen,
+    setStudipOpen,
+    moveTarget,
+    setMoveTarget,
     whatIf,
     setWhatIf,
     view,

@@ -6,7 +6,12 @@
       "Add courses from a searchable command palette (Ctrl/Cmd + K) with category, semester, status and grade in one step",
       "New Timeline board: one column per semester with ECTS load and weekly hours; drag cards to reschedule",
       "Planner shows next-semester Options A/B and your graduation path, and can add a suggestion to your plan in one click",
-      "Your data carries over automatically. The previous interface is still available via \"Classic view\" in the footer"
+      "Your data carries over automatically. The previous interface is still available via \"Classic view\" in the footer",
+      "New Catalog view: browse and filter every module by language, term, difficulty and more",
+      "Grade simulator in the Planner shows the final GPA your expected grades lead to",
+      "On phones, long-press a course to drag it, or tap it to move it to another semester",
+      "Undo and redo now cover every change, and the app keeps working offline once opened",
+      "The AEDS Assistant and Sync from StudIP got a fresh look that follows dark mode"
     ]
   },
   {

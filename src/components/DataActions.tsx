@@ -6,13 +6,8 @@ import { encodeQR } from "../lib/qr";
 import { downloadFile, latestAutoBackup } from "../lib/storage";
 import type { Course } from "../lib/types";
 import { useTracker } from "../state";
-import { openStuMSSyncModal } from "../widgets/legacyWidgets";
 import { Button, Modal } from "./ui";
 
-const PALETTE = {
-  light: { ink: "#1C2333", paper: "#F6F3EC", panel: "#FFFFFF", accent: "#2F6F6D", warn: "#B5652D", line: "#DCD6C7", muted: "#6B6558" },
-  dark: { ink: "#ECE8DC", paper: "#171B24", panel: "#1F2530", accent: "#5AB6B2", warn: "#E29A5D", line: "#333B49", muted: "#8B93A3" },
-};
 
 export interface DataActions {
   exportCsv: () => void;
@@ -37,7 +32,7 @@ interface ShareState {
 }
 
 export function useDataActions(): DataActions {
-  const { courses, setCourses, patch, state, stats, toast, confirm } = useTracker();
+  const { courses, setCourses, patch, stats, toast, confirm, setStudipOpen } = useTracker();
   const csvRef = useRef<HTMLInputElement>(null);
   const jsonRef = useRef<HTMLInputElement>(null);
   const [shareState, setShareState] = useState<ShareState | null>(null);
@@ -121,9 +116,7 @@ export function useDataActions(): DataActions {
     }
   }, [confirm, setCourses, toast]);
 
-  const syncStudip = useCallback(() => {
-    openStuMSSyncModal(courses, setCourses, PALETTE[state.theme]);
-  }, [courses, setCourses, state.theme]);
+  const syncStudip = useCallback(() => setStudipOpen(true), [setStudipOpen]);
 
   const share = useCallback(() => {
     const real = courses.filter((c) => !c.hypothetical);

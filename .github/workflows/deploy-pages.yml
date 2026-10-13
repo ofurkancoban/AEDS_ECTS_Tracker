@@ -35,9 +35,10 @@ jobs:
           node-version: "22"
           cache: npm
 
-      - name: Build
+      - name: Test and build
         run: |
           npm ci
+          npm test
           npm run build
 
       - name: Inject rating token
