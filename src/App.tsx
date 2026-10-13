@@ -38,12 +38,14 @@ import { Logo } from "./components/Logo";
 import { Celebration } from "./components/Celebration";
 import { FileBackupIndicator, FileBackupModal, useFileBackup } from "./components/FileBackup";
 import { canShareFiles } from "./lib/fileBackup";
+import { ISSUES_URL, issueUrl } from "./lib/reportIssue";
+import { classicUrl, isPreview } from "./lib/stage";
 import { MoveSheet } from "./components/MoveSheet";
 import { ChangelogModal, HowItWorksModal, ShareModal, useChangelog, useDataActions, useQrImport } from "./components/DataActions";
 import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, Toasts, cx } from "./components/ui";
 import { TOTAL_REQUIRED } from "./lib/constants";
 import { currentSemester } from "./lib/semesters";
-import { hitGlobalCounter } from "./lib/storage";
+import { hitGlobalCounter, readFlag, writeFlag } from "./lib/storage";
 import { TrackerProvider, useTracker, type View } from "./state";
 import { Courses } from "./views/Courses";
 import { Overview } from "./views/Overview";
@@ -90,6 +92,11 @@ function Shell() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [fileBackupOpen, setFileBackupOpen] = useState(false);
+  const [previewDismissed, setPreviewDismissed] = useState(() => readFlag("ects-next-preview-note") === "hidden");
+  const dismissPreview = () => {
+    writeFlag("ects-next-preview-note", "hidden");
+    setPreviewDismissed(true);
+  };
   const fileBackup = useFileBackup();
   const [logOpen, setLogOpen] = useState(false);
   const [visits, setVisits] = useState<number | null>(null);
@@ -320,6 +327,28 @@ function Shell() {
           </div>
           <p className="text-meta text-muted">{current.blurb}</p>
         </div>
+
+        {isPreview() && !previewDismissed && (
+          <div role="note" className="rise mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-2.5 text-body-sm text-accent">
+            <Sparkles size={15} className="shrink-0" />
+            <span className="min-w-0 flex-1">You're trying the new design. Your courses are shared with the classic version, so you can switch back any time.</span>
+            <a href={classicUrl()} className="font-medium underline underline-offset-2">
+              Back to classic
+            </a>
+            <a
+              href={ISSUES_URL}
+              onClick={(e) => (e.currentTarget.href = issueUrl({ kind: "feedback" }))}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline underline-offset-2"
+            >
+              Send feedback
+            </a>
+            <IconButton label="Hide this note" className="h-8 w-8 !text-accent" onClick={dismissPreview}>
+              <X size={15} />
+            </IconButton>
+          </div>
+        )}
 
         {(whatIf || hypotheticalCount > 0) && (
           <div
@@ -585,9 +614,20 @@ function Footer({ visits, usage }: { visits: number | null; usage: number }) {
         {updated && !isNaN(updated.getTime()) && <span>Catalog updated {updated.toLocaleDateString()}</span>}
         <span>You've opened the tracker {usage} time{usage === 1 ? "" : "s"}</span>
         {visits !== null && <span>{visits.toLocaleString()} opens across all students</span>}
-        <a href="./legacy/" className="underline decoration-line-strong underline-offset-2 hover:text-ink">
+        <a href={classicUrl()} className="underline decoration-line-strong underline-offset-2 hover:text-ink">
           Classic view
         </a>
+        <a
+          href={ISSUES_URL}
+          // Built on click so it includes errors seen up to that moment.
+          onClick={(e) => (e.currentTarget.href = issueUrl({ kind: "feedback" }))}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-line-strong underline-offset-2 hover:text-ink"
+        >
+          Report a problem
+        </a>
+        <span className="num">v{__APP_VERSION__}</span>
       </div>
     </footer>
   );

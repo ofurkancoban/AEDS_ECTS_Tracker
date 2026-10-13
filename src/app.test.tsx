@@ -468,6 +468,10 @@ describe("robustness", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/Something went wrong/);
     expect(screen.getByRole("button", { name: "Download my data" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Open classic view" }).getAttribute("href")).toBe("./legacy/");
+    const report = new URL(screen.getByRole("link", { name: "Report this problem" }).getAttribute("href")!);
+    expect(report.pathname).toBe("/ofurkancoban/AEDS_ECTS_Tracker/issues/new");
+    expect(report.searchParams.get("title")).toBe("Crash: boom");
+    expect(report.searchParams.get("body")).toContain("no course data");
   });
 });
 

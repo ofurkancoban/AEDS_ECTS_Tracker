@@ -14,6 +14,11 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  # Staged rollout. "next": classic UI at the site root, new design at /next/.
+  # "main": new design at the root, classic UI at /legacy/ (and /next/ redirects).
+  RELEASE_STAGE: next
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -41,16 +46,25 @@ jobs:
           npm test
           npm run build
 
+      - name: Performance budget
+        run: |
+          node scripts/check-budget.mjs dist
+          npx lhci autorun --config=lighthouserc.cjs
+
       - name: End-to-end tests
         run: |
           npx playwright install --with-deps chromium
           npx playwright test
 
+      - name: Arrange the release stage
+        if: env.RELEASE_STAGE == 'next'
+        run: node scripts/stage-layout.mjs dist
+
       - name: Inject rating token
         env:
           RATING_CLIENT_TOKEN: ${{ secrets.RATING_CLIENT_TOKEN }}
         run: |
-          sed -i "s|__GITHUB_RATING_TOKEN__|${RATING_CLIENT_TOKEN}|g" dist/assets/*.js dist/legacy/index.html
+          grep -rl "__GITHUB_RATING_TOKEN__" dist | xargs -r sed -i "s|__GITHUB_RATING_TOKEN__|${RATING_CLIENT_TOKEN}|g"
 
       - uses: actions/upload-pages-artifact@v3
         with:

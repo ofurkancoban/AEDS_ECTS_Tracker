@@ -1,12 +1,13 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { STORAGE_KEY } from "../lib/constants";
+import { issueUrl, rememberError } from "../lib/reportIssue";
 
 /**
  * Last line of defence: instead of a blank page, explain what happened and
  * offer ways out that never lose data (download it, reload, classic view).
  */
-export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null };
+export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; componentStack: string | null }> {
+  state = { error: null as Error | null, componentStack: null as string | null };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
@@ -14,6 +15,8 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("ECTS Tracker crashed", error, info.componentStack);
+    rememberError(error.message);
+    this.setState({ componentStack: info.componentStack || null });
   }
 
   private download = () => {
@@ -58,8 +61,16 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
             <button className={btn} onClick={() => window.location.reload()}>
               Reload
             </button>
-            <a className={btn} href="./legacy/">
+            <a className={btn} href={location.pathname.includes("/next/") ? "../" : "./legacy/"}>
               Open classic view
+            </a>
+            <a
+              className={btn}
+              href={issueUrl({ kind: "crash", error: { message: this.state.error.message, stack: this.state.error.stack }, componentStack: this.state.componentStack })}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Report this problem
             </a>
           </div>
         </div>

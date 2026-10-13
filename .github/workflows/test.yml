@@ -25,6 +25,11 @@ jobs:
           npm test
           npm run build
 
+      - name: Performance budget
+        run: |
+          node scripts/check-budget.mjs dist
+          npx lhci autorun --config=lighthouserc.cjs
+
       - name: End-to-end tests
         run: |
           npx playwright install --with-deps chromium
@@ -33,6 +38,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
-          path: playwright-report
+          name: reports
+          path: |
+            playwright-report
+            lighthouse-report
           retention-days: 7

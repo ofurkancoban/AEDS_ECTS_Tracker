@@ -1,4 +1,5 @@
-import { copyFileSync, cpSync, existsSync, mkdirSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 import type { Plugin } from "vite";
@@ -26,12 +27,42 @@ function copyRootDataFiles(): Plugin {
       for (const file of ["catalog.csv", "CHANGELOG.json", "favicon.ico", "favicon-512.png"]) {
         copyFileSync(resolve(import.meta.dirname, file), resolve(legacyOut, file));
       }
+      // After the preview phase, old /next/ links and bookmarks land on the new
+      // root, and the preview's service worker removes itself and its caches.
+      const nextOut = resolve(out, "next");
+      mkdirSync(nextOut, { recursive: true });
+      writeFileSync(
+        resolve(nextOut, "index.html"),
+        '<!DOCTYPE html><meta charset="utf-8"><title>AEDS Credit Tracker</title><meta http-equiv="refresh" content="0; url=../"><link rel="canonical" href="../"><a href="../">Continue to the AEDS Credit Tracker</a><script>location.replace("../" + location.search + location.hash)</script>',
+      );
+      writeFileSync(
+        resolve(nextOut, "sw.js"),
+        "self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c)))).then(()=>self.registration.unregister())));",
+      );
     },
   };
 }
 
+// Version shown in problem reports: package version plus the commit it was built from.
+function buildVersion(): string {
+  const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, "package.json"), "utf8")).version;
+  let sha = (process.env.GITHUB_SHA || "").slice(0, 7);
+  if (!sha) {
+    try {
+      sha = execSync("git rev-parse --short HEAD", { cwd: import.meta.dirname }).toString().trim();
+    } catch {
+      sha = "dev";
+    }
+  }
+  return `${pkg}+${sha}`;
+}
+
 export default defineConfig({
   base: "./",
+  define: {
+    __APP_VERSION__: JSON.stringify(buildVersion()),
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
+  },
   plugins: [react(), tailwindcss(), copyRootDataFiles()],
   test: { environment: "happy-dom", include: ["src/**/*.test.{ts,tsx}"] },
   build: {

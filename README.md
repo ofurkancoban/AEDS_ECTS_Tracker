@@ -110,6 +110,15 @@ The module catalog lives in `catalog.csv` (one row per module: `category, code, 
 - Development: `npm install`, `npm run dev`; production build: `npm run build` (output in `dist/`, deployed to GitHub Pages by `.github/workflows/deploy-pages.yml`)
 - The QR code encoder is a from-scratch implementation of the relevant parts of ISO/IEC 18004 (versions 1-10, error correction level L), validated by round-tripping through an independent decoder
 
+## Releases
+
+- Every push runs unit/component tests (Vitest), a bundle size budget (`npm run budget`, limits in `scripts/check-budget.mjs`), Lighthouse CI (`npm run lighthouse`, thresholds in `lighthouserc.cjs`) and the Playwright end-to-end suite
+- Staged rollout, controlled by `RELEASE_STAGE` in `.github/workflows/deploy-pages.yml`:
+  - `next` (preview): the classic UI stays at the site root with a "Try the new design" button, and the new design is served at `/next/` (`scripts/stage-layout.mjs`)
+  - `main`: the new design is the root, the classic UI moves to `/legacy/`, and `/next/` redirects to the root while the preview's service worker removes itself
+  - Both designs run on the same origin and read the same `localStorage`, so users can switch back and forth without losing data
+- Problems reach the maintainer through "Report a problem" (footer and error screen), which opens a pre-filled GitHub issue with the version, browser and scrubbed error details, and no course data
+
 ## License
 
 MIT. See [`LICENSE`](./LICENSE).
