@@ -70,7 +70,7 @@ describe("navigation", () => {
     seed(sample());
     await renderApp();
     expect(screen.queryByRole("region", { name: "Let's map out your master's" })).toBeNull();
-    expect(screen.getByText(/ECTS left to graduate/)).toBeTruthy();
+    expect(screen.getByText(/of 120 ECTS done/)).toBeTruthy();
     expect(screen.getByRole("img", { name: "Credits and GPA by semester" })).toBeTruthy();
   });
 
@@ -253,7 +253,7 @@ describe("modes and settings", () => {
     // Real GPA (3.0, 1.0, 1.7 over 18 ECTS) stays 1.90; projected includes the 1.0: 6.7 / 4 = 1.68.
     expect(screen.getAllByText("1.90").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/projected 1\.68/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/ECTS left to graduate/).textContent).toMatch(/^102 ECTS left to graduate/);
+    expect(screen.getByTestId("plan-status").textContent).toMatch(/^102 ECTS left/);
   });
 
   it("keeps what-if courses when the mode is turned off, until cleared with confirmation", async () => {
@@ -432,7 +432,7 @@ describe("robustness", () => {
       JSON.stringify({ courses: [{ id: "a", name: "wir821 - International Trade, Production and Change", category: "economics", ects: 6, status: "completed", grade: "2,3" }, { foo: 1 }, null, "x"] }),
     );
     await renderApp();
-    expect(screen.getByText(/ECTS left to graduate/)).toBeTruthy();
+    expect(screen.getByText(/of 120 ECTS done/)).toBeTruthy();
     expect(screen.getAllByText("2.30").length).toBeGreaterThan(0);
   });
 
@@ -640,10 +640,10 @@ describe("credits beyond a requirement", () => {
       .getAllByRole("listitem")
       .find((li) => /more than it needs/.test(li.textContent || ""))!;
     expect(note.textContent).toMatch(/Economics has 6 ECTS more than it needs/);
-    expect(screen.getByText(/ECTS left to graduate/).textContent).toMatch(/^84 ECTS left to graduate/);
+    expect(screen.getByTestId("plan-status").textContent).toMatch(/^84 ECTS left/);
     await user.click(within(note).getByRole("button", { name: /Move to SPEC/ }));
     await waitFor(() => expect(saved().filter((c) => c.category === "specialization")).toHaveLength(1));
-    expect(screen.getByText(/ECTS left to graduate/).textContent).toMatch(/^78 ECTS left to graduate/);
+    expect(screen.getByTestId("plan-status").textContent).toMatch(/^78 ECTS left/);
   });
 });
 
@@ -653,9 +653,9 @@ describe("progress headline", () => {
   it("says how much is left, what is already covered and what is not in the plan", async () => {
     seed(sample());
     await renderApp();
-    expect(screen.getByRole("heading", { level: 2, name: /ECTS left to graduate/ }).textContent).toBe("102 ECTS left to graduate");
+    expect(screen.getByRole("heading", { level: 2, name: /ECTS done/ }).textContent).toBe("Finding your rhythm: 18 of 120 ECTS done");
     expect(status()).toBe(
-      "6 of them are already running or planned. Not in your plan yet: Economics 18 ECTS, Empirical Methods 18 ECTS, Data Science 12 ECTS, Specialization 18 ECTS, Thesis 30 ECTS. Plan it",
+      "102 ECTS left. 6 of them are already running or planned. Not in your plan yet: Economics 18 ECTS, Empirical Methods 18 ECTS, Data Science 12 ECTS, Specialization 18 ECTS, Thesis 30 ECTS. Plan it",
     );
   });
 
@@ -668,22 +668,22 @@ describe("progress headline", () => {
     ];
     seed(plan);
     await renderApp();
-    expect(status()).toBe("90 of them are already running or planned. Not in your plan yet: Thesis 30 ECTS. Plan it");
+    expect(status()).toBe("120 ECTS left. 90 of them are already running or planned. Not in your plan yet: Thesis 30 ECTS. Plan it");
     cleanup();
     seed([...plan, course("mam", "thesis", "WiSe27/28", "planned")]);
     await renderApp();
-    expect(status()).toBe("Everything you still need is already running or planned.");
+    expect(status()).toBe("120 ECTS left. Everything you still need is already running or planned.");
   });
 
   it("says so when nothing is in the plan yet, and when everything is", async () => {
     seed([course("wir821", "economics", "SoSe24", "completed", "2.0")]);
     await renderApp();
-    expect(status()).toMatch(/^None of it is in your plan yet: Economics 30 ECTS, /);
+    expect(status()).toMatch(/^114 ECTS left\. None of it is in your plan yet: Economics 30 ECTS, /);
     cleanup();
     seed([course("mam", "thesis", "SoSe27", "planned")]);
     await renderApp();
-    expect(screen.getByText(/ECTS left to graduate/)).toBeTruthy();
-    expect(status()).toMatch(/^30 of them are already running or planned\. Not in your plan yet: Economics 36 ECTS/);
+    expect(screen.getByText("Ready to start: 120 ECTS ahead")).toBeTruthy();
+    expect(status()).toMatch(/^120 ECTS left\. 30 of them are already running or planned\. Not in your plan yet: Economics 36 ECTS/);
   });
 });
 

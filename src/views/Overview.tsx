@@ -25,6 +25,7 @@ import { useCategoryDrop } from "../components/dnd";
 import { Bar, Button, CategoryDot, SectionTitle, cx } from "../components/ui";
 import { labelForCode } from "../lib/catalog";
 import { LECTURE_WEEKS, MAX_ECTS_PER_SEMESTER, TOTAL_REQUIRED, categoryById } from "../lib/constants";
+import { headline } from "../lib/headline";
 import { overflowNotes } from "../lib/overflow";
 import { capacityRisk, compulsoryRisks, unplannedLastChance } from "../lib/risks";
 import { lastChanceCourses, notOfferedAnymore } from "../lib/planning";
@@ -65,6 +66,8 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
     reqAvg === null ? null : reqAvg < 1 ? "Already on track" : reqAvg > 5 ? "Not achievable" : `Need ${reqAvg.toFixed(2)} avg`;
 
   const remainingCounted = TOTAL_REQUIRED - stats.completed;
+  // Stage-based headline: module credits in semester steps, then the thesis.
+  const head = headline(stats);
   // What the hero says is still missing from the plan, by category ("Thesis 30 ECTS").
   const covered = stats.inProgress + stats.planned;
   const missing = stats.categories.filter((c) => !c.excludedFromTotal && c.remaining > 0);
@@ -100,18 +103,17 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
           <div className="min-w-0">
             <div className="eyebrow mb-1">Master's progress</div>
             <h2 className="font-serif text-display leading-tight font-semibold tracking-tight sm:text-display-lg">
-              {stats.graduationReady ? (
-                <>All requirements met. Time to graduate.</>
-              ) : remainingCounted <= 0 ? (
-                <>120 ECTS reached, a few loose ends left.</>
-              ) : (
+              {head.lead ? (
                 <>
-                  <span className="num">{remainingCounted}</span> ECTS left to graduate
+                  <span className="text-accent">{head.lead}:</span> <span className="num">{stats.completed}</span> of {TOTAL_REQUIRED} ECTS done
                 </>
+              ) : (
+                head.text
               )}
             </h2>
             {!stats.graduationReady && remainingCounted > 0 && (
               <p className="mt-2 max-w-xl text-body leading-relaxed text-muted" data-testid="plan-status">
+                <span className="num font-semibold text-ink">{remainingCounted}</span> ECTS left.{" "}
                 {stats.remaining === 0 ? (
                   <>Everything you still need is already running or planned.</>
                 ) : (
