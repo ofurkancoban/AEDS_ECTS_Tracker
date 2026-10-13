@@ -1,5 +1,15 @@
 [
   {
+    "version": "2026-10-13",
+    "items": [
+      "A completely redesigned interface: a dashboard with Overview, Courses, Timeline, Planner and Checklist views, built for both desktop and phone",
+      "Add courses from a searchable command palette (Ctrl/Cmd + K) with category, semester, status and grade in one step",
+      "New Timeline board: one column per semester with ECTS load and weekly hours; drag cards to reschedule",
+      "Planner shows next-semester Options A/B and your graduation path, and can add a suggestion to your plan in one click",
+      "Your data carries over automatically. The previous interface is still available via \"Classic view\" in the footer"
+    ]
+  },
+  {
     "version": "2026-09-30",
     "items": [
       "Added a 'How it works' button next to Print that opens a modal explaining the tracker, loading real data, backups, and the AEDS Assistant",

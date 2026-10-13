@@ -1,2 +1,5 @@
 .DS_Store
 *.har
+node_modules/
+dist/
+__pycache__/

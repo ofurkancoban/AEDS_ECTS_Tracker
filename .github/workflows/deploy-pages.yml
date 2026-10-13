@@ -28,21 +28,27 @@ jobs:
           python-version: "3.12"
 
       - name: Validate catalog
-        run: python3 scripts/validate_catalog.py catalog.csv index.html
+        run: python3 scripts/validate_catalog.py catalog.csv legacy/index.html
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
 
       - name: Inject rating token
         env:
           RATING_CLIENT_TOKEN: ${{ secrets.RATING_CLIENT_TOKEN }}
         run: |
-          mkdir -p _site
-          shopt -s extglob dotglob
-          cp -r !(_site) _site/
-          rm -rf _site/.git _site/.github
-          sed -i "s|__GITHUB_RATING_TOKEN__|${RATING_CLIENT_TOKEN}|g" _site/index.html
+          sed -i "s|__GITHUB_RATING_TOKEN__|${RATING_CLIENT_TOKEN}|g" dist/assets/*.js dist/legacy/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: dist
 
       - id: deployment
         uses: actions/deploy-pages@v4
