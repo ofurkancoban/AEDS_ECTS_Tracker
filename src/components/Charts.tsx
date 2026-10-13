@@ -30,6 +30,8 @@ export function ProgressRing({
   const seg = (from: number, frac: number) => ({
     strokeDasharray: `${Math.max(0, frac * C - (frac > 0.01 ? 3 : 0))} ${C}`,
     strokeDashoffset: -from * C,
+    // A zero-length arc with a round cap would still draw a dot.
+    opacity: frac > 0.0005 ? 1 : 0,
   });
   const pct = Math.round(fc * 100);
   const shown = useCountUp(completed);

@@ -102,7 +102,7 @@ export function GradeSimulator() {
                 value={restAvg}
                 onChange={(e) => setRestAvg(parseFloat(e.target.value))}
                 className="mt-2 w-full accent-[var(--accent)]"
-                aria-label="Average grade for unplanned credits"
+                aria-label="Average grade for credits not planned yet"
               />
             </div>
           )}

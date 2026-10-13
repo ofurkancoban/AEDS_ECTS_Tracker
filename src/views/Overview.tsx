@@ -61,6 +61,10 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
     reqAvg === null ? null : reqAvg < 1 ? "Already on track" : reqAvg > 5 ? "Not achievable" : `Need ${reqAvg.toFixed(2)} avg`;
 
   const remainingCounted = TOTAL_REQUIRED - stats.completed;
+  // What the hero says is still missing from the plan, by category ("Thesis 30 ECTS").
+  const covered = stats.inProgress + stats.planned;
+  const missing = stats.categories.filter((c) => !c.excludedFromTotal && c.remaining > 0);
+  const toPlan = missing.map((c) => `${c.name} ${c.remaining} ECTS`).join(", ");
 
   // Completed (passed, counted) credits per semester, for the bars under the GPA line.
   const semesterBars = useMemo(() => {
@@ -98,22 +102,35 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
                 <>120 ECTS reached, a few loose ends left.</>
               ) : (
                 <>
-                  <span className="num">{remainingCounted}</span> ECTS to go
-                  {stats.remaining > 0 ? (
-                    <span className="text-muted">
-                      , <span className="num">{stats.remaining}</span> still unplanned
-                    </span>
-                  ) : (
-                    <span className="text-muted">, all of it planned</span>
-                  )}
+                  <span className="num">{remainingCounted}</span> ECTS left to graduate
                 </>
               )}
             </h2>
+            {!stats.graduationReady && remainingCounted > 0 && (
+              <p className="mt-2 max-w-xl text-body leading-relaxed text-muted" data-testid="plan-status">
+                {stats.remaining === 0 ? (
+                  <>Everything you still need is already running or planned.</>
+                ) : (
+                  <>
+                    {covered > 0 ? (
+                      <>
+                        <span className="num font-semibold text-ink">{covered}</span> of them are already running or planned.{" "}
+                      </>
+                    ) : null}
+                    {covered > 0 ? "Not in your plan yet: " : "None of it is in your plan yet: "}
+                    <span className="font-semibold text-ink">{toPlan}</span>.{" "}
+                    <button onClick={() => setView("planner")} className="cursor-pointer font-medium text-accent underline underline-offset-2">
+                      Plan it
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
             <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
               <Legend color="var(--accent)" label="Completed" value={stats.completed} />
               <Legend color="var(--warn)" label="In progress" value={stats.inProgress} />
               <Legend color="var(--muted)" label="Planned" value={stats.planned} hatch />
-              <Legend color="var(--line-strong)" label="Unplanned" value={stats.remaining} />
+              <Legend color="var(--line-strong)" label="Not planned yet" value={stats.remaining} />
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button variant="primary" onClick={() => setView("planner")}>
@@ -536,7 +553,7 @@ function CategoryCard({ cat }: { cat: CategoryStats }) {
           <div className="mt-3 flex items-baseline gap-1">
             <span className="num text-display leading-none font-semibold">{cat.completed}</span>
             <span className="num text-body-sm text-muted">/ {req} ECTS</span>
-            {cat.remaining > 0 && <span className="ml-auto text-meta text-warn">{cat.remaining} unplanned</span>}
+            {cat.remaining > 0 && <span className="ml-auto text-meta text-warn">{cat.remaining} to plan</span>}
           </div>
           <div className="mt-3">
             <Bar

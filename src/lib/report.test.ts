@@ -30,7 +30,7 @@ describe("progress report", () => {
     expect(html).toContain("<h2>Requirements</h2>");
     expect(html).toMatch(/<span class="mark half">◐<\/span>wir874/);
     expect(html).toContain("<h3>SoSe24 <span class=\"muted\">· 6 ECTS · average 2.00</span></h3>");
-    expect(html).toContain("Suggested schedule for what is still unplanned");
+    expect(html).toContain("Suggested schedule for what is not planned yet");
   });
 
   it("escapes course names and leaves what-if courses out", () => {

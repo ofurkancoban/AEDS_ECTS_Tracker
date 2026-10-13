@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 
 test("overview reflects the imported transcript", async ({ page }) => {
   // 7 counted completed courses: 42 ECTS (the Additional one does not count).
-  await expect(page.getByText("78 ECTS to go")).toBeVisible();
+  await expect(page.getByText("78 ECTS left to graduate")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Where your credits go" })).toBeVisible();
   for (const name of ["Economics", "Empirical Methods", "Data Science", "Specialization", "Thesis"]) {
     await expect(page.locator("button.card", { hasText: name }).first()).toBeVisible();
@@ -238,7 +238,7 @@ test("what-if: simulate, leave the mode, keep, clear and undo", async ({ page })
   await expect(page.getByRole("status")).toContainText("Projected GPA");
   // The sidebar shows the real GPA, unchanged.
   await expect(page.locator("aside").getByText(/^\d\.\d\d$/).first()).toHaveText(realBefore!);
-  await expect(page.getByText("78 ECTS to go")).toBeVisible();
+  await expect(page.getByText("78 ECTS left to graduate")).toBeVisible();
 
   // Leaving the mode keeps the simulated course, also across a reload.
   await page.getByRole("switch", { name: /What-if mode/ }).first().click();

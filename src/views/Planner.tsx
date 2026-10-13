@@ -110,7 +110,7 @@ export function Planner() {
           <SectionTitle eyebrow="Simulation" title="Your path to graduation" />
           <p className="mb-5 flex items-start gap-2 text-body-sm leading-relaxed text-muted">
             <Route size={15} className="mt-0.5 shrink-0" />
-            One possible schedule for everything still unplanned, based on when modules have run before.
+            One possible schedule for everything not in your plan yet, based on when modules have run before.
             {path.anyPredicted && " Courses marked likely aren't confirmed for that semester yet."}
           </p>
           <ol className="relative grid grid-cols-1 gap-5 border-l-2 border-dashed border-line pl-6">

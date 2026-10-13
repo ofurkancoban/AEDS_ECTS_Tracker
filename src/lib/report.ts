@@ -103,7 +103,7 @@ export function buildReport({ state, stats, catalog, path, now = new Date() }: R
 
   const plan =
     path && path.terms.length
-      ? `<h2>Suggested schedule for what is still unplanned</h2>
+      ? `<h2>Suggested schedule for what is not planned yet</h2>
         <p class="muted small">A simulation based on when modules ran before${path.anyPredicted ? "; modules marked * are predicted, not confirmed" : ""}. Not a commitment.</p>
         ${path.terms
           .map(
