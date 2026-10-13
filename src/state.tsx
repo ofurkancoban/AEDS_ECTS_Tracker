@@ -28,7 +28,7 @@ interface TrackerCtx {
   catalog: Catalog;
   stats: Stats;
   courses: Course[];
-  setCourses: (fn: (prev: Course[]) => Course[]) => void;
+  setCourses: (fn: (prev: Course[]) => Course[], coalesceKey?: string) => void;
   patch: (p: Partial<TrackerState>) => void;
   updateCourse: (id: string, p: Partial<Course>) => void;
   removeCourse: (id: string) => void;
@@ -129,6 +129,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
+      flush(); // and never leave a timer behind that could write stale data later
     };
   }, []);
 
@@ -161,23 +162,32 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     setRedoCount(redoStack.current.length);
   };
 
-  // Every user edit goes through here, so all of them can be undone.
-  const setCourses = useCallback((fn: (prev: Course[]) => Course[]) => {
+  // Every user edit goes through here, so all of them can be undone. Rapid
+  // edits to the same field of the same course (typing a note) share one step.
+  const lastKey = useRef<string | undefined>(undefined);
+  const setCourses = useCallback((fn: (prev: Course[]) => Course[], coalesceKey?: string) => {
     const now = Date.now();
-    if (now - lastRecord.current > COALESCE_MS) {
+    const merge = !!coalesceKey && coalesceKey === lastKey.current && now - lastRecord.current <= COALESCE_MS;
+    if (!merge) {
       undoStack.current.push(stateRef.current.courses);
       if (undoStack.current.length > UNDO_LIMIT) undoStack.current.shift();
     }
     lastRecord.current = now;
+    lastKey.current = coalesceKey;
     redoStack.current = [];
     syncCounts();
-    setState((s) => ({ ...s, courses: fn(s.courses) }));
+    // Apply to the latest courses right away (not at the next render), so
+    // back-to-back edits each see the previous one and undo stays exact.
+    const next = fn(stateRef.current.courses);
+    stateRef.current = { ...stateRef.current, courses: next };
+    setState((s) => ({ ...s, courses: next }));
   }, []);
 
   const patch = useCallback((p: Partial<TrackerState>) => setState((s) => ({ ...s, ...p })), []);
 
   const updateCourse = useCallback(
-    (id: string, p: Partial<Course>) => setCourses((cs) => cs.map((c) => (c.id === id ? { ...c, ...p } : c))),
+    (id: string, p: Partial<Course>) =>
+      setCourses((cs) => cs.map((c) => (c.id === id ? { ...c, ...p } : c)), id + ":" + Object.keys(p).sort().join(",")),
     [setCourses],
   );
 
@@ -195,6 +205,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     redoStack.current.push(stateRef.current.courses);
     lastRecord.current = 0;
     syncCounts();
+    stateRef.current = { ...stateRef.current, courses: prev };
     setState((s) => ({ ...s, courses: prev }));
   }, []);
 
@@ -204,19 +215,23 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     undoStack.current.push(stateRef.current.courses);
     lastRecord.current = 0;
     syncCounts();
+    stateRef.current = { ...stateRef.current, courses: next };
     setState((s) => ({ ...s, courses: next }));
   }, []);
 
   const removeCourse = useCallback(
     (id: string) => {
-      const target = stateRef.current.courses.find((c) => c.id === id);
-      if (!target) return;
-      lastRecord.current = 0;
+      const list = stateRef.current.courses;
+      const index = list.findIndex((c) => c.id === id);
+      if (index < 0) return;
+      const target = list[index];
       setCourses((cs) => cs.filter((c) => c.id !== id));
-      lastRecord.current = 0;
-      toast({ message: `Removed ${target.name}`, action: { label: "Undo", run: undo } });
+      // The toast puts back exactly this course, even if other edits happened since.
+      const restore = () =>
+        setCourses((cs) => (cs.some((c) => c.id === id) ? cs : [...cs.slice(0, index), target, ...cs.slice(index)]));
+      toast({ message: `Removed ${target.name}`, action: { label: "Undo", run: restore } });
     },
-    [setCourses, toast, undo],
+    [setCourses, toast],
   );
 
   // Leaving what-if mode keeps the simulated courses (as the classic UI did);
@@ -233,9 +248,11 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
       danger: true,
     });
     if (!ok) return;
+    const removed = stateRef.current.courses.filter((c) => c.hypothetical);
     setCourses((cs) => cs.filter((c) => !c.hypothetical));
-    toast({ message: `Removed ${n} what-if course${n === 1 ? "" : "s"}`, action: { label: "Undo", run: undo } });
-  }, [setCourses, toast, undo]);
+    const restore = () => setCourses((cs) => [...cs, ...removed.filter((r) => !cs.some((c) => c.id === r.id))]);
+    toast({ message: `Removed ${n} what-if course${n === 1 ? "" : "s"}`, action: { label: "Undo", run: restore } });
+  }, [setCourses, toast]);
 
   const setView = useCallback((v: View) => {
     setViewRaw(v);

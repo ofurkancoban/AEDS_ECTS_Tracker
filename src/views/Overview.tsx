@@ -149,17 +149,18 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
         />
         <Kpi
           icon={<CalendarClock size={17} />}
-          label="Graduation"
+          label={stats.daysLeft !== null && stats.daysLeft < 0 ? "Graduation date passed" : "Graduation"}
           value={
             stats.daysLeft !== null ? (
               <>
-                <span className="num">{Math.max(0, stats.daysLeft)}</span>
-                <span className="text-[15px] text-muted"> days</span>
+                <span className="num">{Math.abs(stats.daysLeft)}</span>
+                <span className="text-[15px] text-muted">{stats.daysLeft === 1 || stats.daysLeft === -1 ? " day" : " days"}{stats.daysLeft < 0 ? " ago" : ""}</span>
               </>
             ) : (
               "-"
             )
           }
+          warn={stats.daysLeft !== null && stats.daysLeft < 0}
           foot={
             <input
               type="date"

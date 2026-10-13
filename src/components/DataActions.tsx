@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORIES, CATEGORY_IDS, STATUS_LABEL, TOTAL_REQUIRED } from "../lib/constants";
 import { coursesFromCsv, coursesToCsv, decodeShare, encodeShare, escapeHtml, shareUrl } from "../lib/io";
 import { encodeQR } from "../lib/qr";
-import { downloadFile, latestAutoBackup } from "../lib/storage";
+import { sanitizeCourses } from "../lib/sanitize";
+import { downloadFile, listAutoBackups, type AutoBackup } from "../lib/storage";
 import type { Course } from "../lib/types";
 import { useTracker } from "../state";
 import { Button, Modal } from "./ui";
@@ -32,7 +33,7 @@ interface ShareState {
 }
 
 export function useDataActions(): DataActions {
-  const { courses, setCourses, patch, stats, toast, confirm, setStudipOpen } = useTracker();
+  const { courses, setCourses, patch, stats, toast, confirm, setStudipOpen, undo } = useTracker();
   const csvRef = useRef<HTMLInputElement>(null);
   const jsonRef = useRef<HTMLInputElement>(null);
   const [shareState, setShareState] = useState<ShareState | null>(null);
@@ -82,8 +83,9 @@ export function useDataActions(): DataActions {
     readFile(e.target, async (text) => {
       try {
         const data = JSON.parse(text);
-        const list: Course[] | null = Array.isArray(data) ? data : Array.isArray(data?.courses) ? data.courses : null;
-        if (!list) {
+        const raw: unknown[] | null = Array.isArray(data) ? data : Array.isArray(data?.courses) ? data.courses : null;
+        const { courses: list, skipped } = sanitizeCourses(raw);
+        if (!raw || (!list.length && skipped)) {
           toast({ message: "This file does not look like a valid backup.", tone: "warn" });
           return;
         }
@@ -91,36 +93,33 @@ export function useDataActions(): DataActions {
           !courses.length ||
           (await confirm({
             title: "Restore this backup?",
-            body: `Your current ${courses.length} course(s) will be replaced by the ${list.length} course(s) in the file.`,
+            body: `Your current ${courses.length} course(s) will be replaced by the ${list.length} course(s) in the file.${
+              skipped ? ` ${skipped} unreadable entr${skipped === 1 ? "y" : "ies"} will be skipped.` : ""
+            } You can undo this.`,
             confirmLabel: "Replace",
           }));
         if (ok) {
           setCourses(() => list);
-          toast({ message: `Restored ${list.length} course(s).`, tone: "success" });
+          toast({ message: `Restored ${list.length} course(s)${skipped ? `, skipped ${skipped} unreadable` : ""}.`, tone: "success" });
         }
       } catch {
         toast({ message: "Could not read this file as JSON.", tone: "warn" });
       }
     });
 
-  const auto = useMemo(() => latestAutoBackup(), [courses]);
+  const [backups, setBackups] = useState<AutoBackup[] | null>(null);
+  const hasAutoBackup = useMemo(() => listAutoBackups().length > 0, [courses]);
 
-  const restoreAuto = useCallback(async () => {
-    const b = latestAutoBackup();
-    if (!b || !Array.isArray(b.state.courses)) {
-      toast({ message: "No automatic backup available yet.", tone: "warn" });
-      return;
-    }
-    const ok = await confirm({
-      title: "Restore the automatic backup?",
-      body: `Saved ${new Date(b.t).toLocaleString()}, with ${b.state.courses.length} course(s). Your current list will be replaced.`,
-      confirmLabel: "Restore",
-    });
-    if (ok) {
-      setCourses(() => b.state.courses as Course[]);
-      toast({ message: "Automatic backup restored.", tone: "success" });
-    }
-  }, [confirm, setCourses, toast]);
+  const restoreAuto = useCallback(() => setBackups(listAutoBackups()), []);
+
+  const restoreBackup = useCallback(
+    (b: AutoBackup) => {
+      setCourses(() => b.courses);
+      setBackups(null);
+      toast({ message: `Restored the backup from ${new Date(b.t).toLocaleString()}.`, tone: "success", action: { label: "Undo", run: undo } });
+    },
+    [setCourses, toast, undo],
+  );
 
   const syncStudip = useCallback(() => setStudipOpen(true), [setStudipOpen]);
 
@@ -187,6 +186,7 @@ export function useDataActions(): DataActions {
     <>
       <input ref={csvRef} type="file" accept=".csv,text/csv" hidden onChange={onCsv} />
       <input ref={jsonRef} type="file" accept=".json,application/json" hidden onChange={onJson} />
+      <BackupsModal backups={backups} current={courses} onRestore={restoreBackup} onClose={() => setBackups(null)} />
     </>
   );
 
@@ -200,7 +200,7 @@ export function useDataActions(): DataActions {
     share,
     print,
     reset,
-    hasAutoBackup: !!auto,
+    hasAutoBackup,
     shareState,
     closeShare: () => setShareState(null),
     fileInputs,
@@ -394,6 +394,47 @@ export function ChangelogModal({ open, onClose, entries }: { open: boolean; onCl
           </div>
         ))}
       </div>
+    </Modal>
+  );
+}
+
+/** Automatic backups, newest first, with what restoring each would change. */
+function BackupsModal({
+  backups,
+  current,
+  onRestore,
+  onClose,
+}: {
+  backups: AutoBackup[] | null;
+  current: Course[];
+  onRestore: (b: AutoBackup) => void;
+  onClose: () => void;
+}) {
+  const ids = new Set(current.map((c) => c.id));
+  return (
+    <Modal open={!!backups} onClose={onClose} title="Automatic backups" subtitle="Earlier versions of your course list saved in this browser. Restoring can be undone." width="max-w-lg">
+      {backups && backups.length === 0 && <p className="text-[13.5px] text-muted">No automatic backup yet. One is kept each time your course list changes.</p>}
+      <ul className="grid grid-cols-1 gap-2">
+        {(backups || []).map((b) => {
+          const theirs = new Set(b.courses.map((c) => c.id));
+          const added = b.courses.filter((c) => !ids.has(c.id)).length;
+          const removed = current.filter((c) => !theirs.has(c.id)).length;
+          return (
+            <li key={b.t} className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <div className="text-[13.5px] font-medium">{new Date(b.t).toLocaleString()}</div>
+                <div className="text-[12px] text-muted">
+                  {b.courses.length} course{b.courses.length === 1 ? "" : "s"}
+                  {added || removed ? ` · brings back ${added}, drops ${removed}` : " · same courses, other details differ"}
+                </div>
+              </div>
+              <Button size="sm" variant="soft" onClick={() => onRestore(b)}>
+                Restore
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
     </Modal>
   );
 }

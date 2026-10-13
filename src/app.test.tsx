@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { codeOf, labelForCode } from "./lib/catalog";
 import { coursesToCsv } from "./lib/io";
 import { course } from "./lib/testUtils";
@@ -407,5 +408,120 @@ describe("planning views", () => {
     await user.type(search, "Trautwein");
     await waitFor(() => expect(screen.getByText(/^\d+ of \d+ modules$/).textContent).toMatch(/^[1-9]\d* of/));
     expect(screen.getAllByRole("article").length).toBeGreaterThan(0);
+  });
+});
+
+describe("robustness", () => {
+  it("opens with broken saved data instead of crashing, keeping what is valid", async () => {
+    localStorage.setItem(
+      STATE_KEY,
+      JSON.stringify({ courses: [{ id: "a", name: "wir821 - International Trade, Production and Change", category: "economics", ects: 6, status: "completed", grade: "2,3" }, { foo: 1 }, null, "x"] }),
+    );
+    await renderApp();
+    expect(screen.getByText(/ECTS to go/)).toBeTruthy();
+    expect(screen.getAllByText("2.30").length).toBeGreaterThan(0);
+  });
+
+  it("restores a JSON backup but skips unreadable entries", async () => {
+    seed(sample());
+    const { user } = await renderApp();
+    const input = document.querySelector('input[accept*="json"]') as HTMLInputElement;
+    const file = new File([JSON.stringify([{ name: "wir821 - International Trade, Production and Change", category: "economics", ects: 6 }, { nope: true }])], "b.json");
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(await screen.findByText(/1 unreadable entry will be skipped/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Replace" }));
+    await waitFor(() => expect(saved()).toHaveLength(1));
+    expect(saved()[0]).toMatchObject({ status: "planned", semester: "Unscheduled" });
+  });
+
+  it("refuses a JSON file that is not a backup", async () => {
+    await renderApp();
+    const input = document.querySelector('input[accept*="json"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['{"hello": 1}'], "x.json")] } });
+    expect(await screen.findByText("This file does not look like a valid backup.")).toBeTruthy();
+  });
+
+  it("shows a rescue screen instead of a blank page if something crashes", async () => {
+    const Boom = () => {
+      throw new Error("boom");
+    };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <ErrorBoundary>
+        <Boom />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByRole("alert").textContent).toMatch(/Something went wrong/);
+    expect(screen.getByRole("button", { name: "Download my data" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open classic view" }).getAttribute("href")).toBe("./legacy/");
+  });
+});
+
+describe("undo precision", () => {
+  it("the removal toast restores that course even after other edits", async () => {
+    seed(sample());
+    const { user } = await renderApp();
+    press("2");
+    const row = (await screen.findByText("Advanced Microeconomics")).closest(".group") as HTMLElement;
+    await user.click(within(row).getByLabelText("Course actions"));
+    await user.click(screen.getByRole("button", { name: "Remove course" }));
+    const other = (await screen.findByText("International Trade, Production and Change")).closest(".group") as HTMLElement;
+    fireEvent.change(within(other).getByLabelText("Grade"), { target: { value: "1.0" } });
+    await waitFor(() => expect(saved().find((c) => codeOf(c.name) === "wir821")!.grade).toBe("1.0"));
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(saved().some((c) => codeOf(c.name) === "wir874")).toBe(true));
+    // The later grade edit is kept.
+    expect(saved().find((c) => codeOf(c.name) === "wir821")!.grade).toBe("1.0");
+    expect(saved().map((c) => codeOf(c.name))).toEqual(["wir821", "wir873", "inf604", "wir874"]);
+  });
+
+  it("quick edits to different courses are separate undo steps, typing a note is one", async () => {
+    seed(sample());
+    const { user } = await renderApp();
+    press("2");
+    const a = (await screen.findByText("International Trade, Production and Change")).closest(".group") as HTMLElement;
+    const b = screen.getByText("Applied Economics").closest(".group") as HTMLElement;
+    fireEvent.change(within(a).getByLabelText("Grade"), { target: { value: "1.0" } });
+    fireEvent.change(within(b).getByLabelText("Grade"), { target: { value: "2.0" } });
+    const grades = () => saved().map((c) => [codeOf(c.name), c.grade]);
+    await waitFor(() => expect(grades().slice(0, 2)).toEqual([["wir821", "1.0"], ["wir873", "2.0"]]));
+    press("z", { ctrlKey: true });
+    // Only the second edit is undone.
+    await waitFor(() => expect(grades().slice(0, 2)).toEqual([["wir821", "1.0"], ["wir873", "1.0"]]));
+    press("z", { ctrlKey: true });
+    await waitFor(() => expect(grades().slice(0, 2)).toEqual([["wir821", "3.0"], ["wir873", "1.0"]]));
+    press("z", { ctrlKey: true, shiftKey: true });
+    await waitFor(() => expect(grades().slice(0, 2)).toEqual([["wir821", "1.0"], ["wir873", "1.0"]]));
+
+    await user.click(within(a).getByRole("button", { expanded: false }));
+    await user.type(within(a).getByPlaceholderText(/Exam date/), "Room A1");
+    await waitFor(() => expect(saved().find((c) => codeOf(c.name) === "wir821")!.notes).toBe("Room A1"));
+    (document.activeElement as HTMLElement).blur();
+    press("z", { ctrlKey: true });
+    // One undo removes the whole note, not a single letter.
+    await waitFor(() => expect(saved().find((c) => codeOf(c.name) === "wir821")!.notes).toBe(""));
+    expect(saved().find((c) => codeOf(c.name) === "wir821")!.grade).toBe("1.0");
+  });
+
+  it("restores a chosen automatic backup, and that can be undone", async () => {
+    const all = sample();
+    localStorage.setItem(STATE_KEY + "::backups", JSON.stringify([{ t: Date.parse("2026-10-01T10:00:00Z"), value: JSON.stringify({ courses: all.slice(0, 2) }) }]));
+    seed(all);
+    const { user } = await renderApp();
+    await user.click(screen.getByRole("button", { name: "Data" }));
+    await user.click(screen.getByRole("button", { name: "Restore automatic backup" }));
+    const dlg = dialog("Automatic backups");
+    expect(within(dlg).getByText(/2 courses · brings back 0, drops 2/)).toBeTruthy();
+    await user.click(within(dlg).getByRole("button", { name: "Restore" }));
+    await waitFor(() => expect(saved()).toHaveLength(2));
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(saved()).toHaveLength(4));
+  });
+
+  it("says how long ago a past graduation date was", async () => {
+    seed(sample(), { graduationDate: "2020-01-01" });
+    await renderApp();
+    expect(screen.getByText("Graduation date passed")).toBeTruthy();
+    expect(screen.getByText(/days ago/)).toBeTruthy();
   });
 });

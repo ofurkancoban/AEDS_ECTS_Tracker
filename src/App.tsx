@@ -31,6 +31,7 @@ import {
 import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { AddCourseDialog } from "./components/AddCourse";
 import { AppearanceModal } from "./components/Appearance";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { MoveSheet } from "./components/MoveSheet";
 import { ChangelogModal, HowItWorksModal, ShareModal, useChangelog, useDataActions, useQrImport } from "./components/DataActions";
 import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, Toasts, cx } from "./components/ui";
@@ -60,9 +61,11 @@ const StudipSync = lazy(() => import("./components/StudipSync"));
 
 export default function App() {
   return (
-    <TrackerProvider>
-      <Shell />
-    </TrackerProvider>
+    <ErrorBoundary>
+      <TrackerProvider>
+        <Shell />
+      </TrackerProvider>
+    </ErrorBoundary>
   );
 }
 

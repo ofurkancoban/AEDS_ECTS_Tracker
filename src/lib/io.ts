@@ -1,5 +1,6 @@
 import { codeOf, courseInfo, labelForCode, parseCSV } from "./catalog";
 import { CATEGORY_IDS, STATUSES, defaultEctsFor } from "./constants";
+import { normalizeGrade } from "./sanitize";
 import { newId } from "./storage";
 import type { CategoryId, Course, Status } from "./types";
 
@@ -37,7 +38,10 @@ export function newCourse(fields: Pick<Course, "category" | "name" | "ects" | "s
 }
 
 export function coursesFromCsv(text: string): { courses: Course[]; skipped: number } {
-  const rows = parseCSV(text).filter((r) => r.some((f) => f.trim() !== ""));
+  // Excel in German locales saves CSV with ";" and decimal commas.
+  const firstLine = text.replace(/^\uFEFF/, "").split(/\r?\n/, 1)[0] || "";
+  const delimiter = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ";" : ",";
+  const rows = parseCSV(text.replace(/^\uFEFF/, ""), delimiter).filter((r) => r.some((f) => f.trim() !== ""));
   if (!rows.length) return { courses: [], skipped: 0 };
   const head = rows[0].map((h) => h.trim().toLowerCase());
   const col = (k: string) => head.indexOf(k.toLowerCase());
@@ -47,7 +51,7 @@ export function coursesFromCsv(text: string): { courses: Course[]; skipped: numb
   for (const r of rows.slice(1)) {
     const category = (ci >= 0 ? r[ci] || "" : "").trim() as CategoryId;
     const name = (ni >= 0 ? r[ni] || "" : "").trim();
-    const ects = ei >= 0 ? parseFloat(r[ei]) : NaN;
+    const ects = ei >= 0 ? parseFloat((r[ei] || "").replace(",", ".")) : NaN;
     if (!CATEGORY_IDS.includes(category) || !name || !ects) {
       skipped++;
       continue;
@@ -60,7 +64,7 @@ export function coursesFromCsv(text: string): { courses: Course[]; skipped: numb
       ects,
       semester: si >= 0 && r[si] ? r[si].trim() : "Unscheduled",
       status,
-      grade: gi >= 0 ? (r[gi] || "").trim() : "",
+      grade: gi >= 0 ? normalizeGrade(r[gi]) : "",
       notes: noi >= 0 ? (r[noi] || "").trim() : "",
     });
     if (pi >= 0 && r[pi]) c.professor = r[pi].trim();

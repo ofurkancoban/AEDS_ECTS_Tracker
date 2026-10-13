@@ -151,7 +151,7 @@ export function computeStats(
       const g = bySem[sem].filter((c) => graded(c) && !c.hypothetical && c.category !== "additional");
       if (!g.length) return null;
       const r = gpaOf(g);
-      return { semester: sem, avg: r.points / r.ects };
+      return r.ects > 0 ? { semester: sem, avg: r.points / r.ects } : null;
     })
     .filter((x): x is { semester: string; avg: number } => !!x)
     .sort((a, b) => {

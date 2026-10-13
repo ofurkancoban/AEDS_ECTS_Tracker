@@ -1,5 +1,6 @@
 import { STORAGE_KEY, VISITS_KEY } from "./constants";
-import type { TrackerState } from "./types";
+import { sanitizeCourses } from "./sanitize";
+import type { Course, TrackerState } from "./types";
 
 export const DEFAULT_STATE: TrackerState = {
   courses: [],
@@ -17,7 +18,7 @@ export function loadState(): TrackerState {
     if (!raw) return { ...DEFAULT_STATE };
     const p = JSON.parse(raw);
     return {
-      courses: Array.isArray(p.courses) ? p.courses : [],
+      courses: sanitizeCourses(p.courses).courses,
       theme: p.theme === "dark" ? "dark" : "light",
       graduationDate: p.graduationDate || "",
       targetGrade: p.targetGrade || "",
@@ -30,22 +31,53 @@ export function loadState(): TrackerState {
   }
 }
 
-/** Writes the state, keeping the previous 5 versions in "<key>::backups" (same ring as the classic UI). */
-export function saveState(state: TrackerState): void {
+const BACKUP_KEY = STORAGE_KEY + "::backups";
+const BACKUP_LIMIT = 5;
+// Edits within this window (typing a note, changing a few grades) share one backup.
+const BACKUP_BURST_MS = 2 * 60 * 1000;
+
+interface RingEntry {
+  t: number;
+  value: string;
+}
+
+function readRing(): RingEntry[] {
+  try {
+    const ring = JSON.parse(localStorage.getItem(BACKUP_KEY) || "[]");
+    return Array.isArray(ring) ? ring.filter((e) => e && typeof e.value === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function coursesOf(value: string): string {
+  try {
+    return JSON.stringify(JSON.parse(value).courses || []);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Writes the state and keeps up to 5 earlier versions in "<key>::backups"
+ * (same ring format as the classic UI). Only versions whose courses differ
+ * are kept, and a burst of edits is stored once, so the ring holds
+ * meaningfully different snapshots rather than every keystroke or theme switch.
+ */
+export function saveState(state: TrackerState, now = Date.now()): void {
   const value = JSON.stringify(state);
   try {
     const prev = localStorage.getItem(STORAGE_KEY);
-    if (prev !== null && prev !== value) {
-      const key = STORAGE_KEY + "::backups";
-      let ring: { t: number; value: string }[] = [];
-      try {
-        ring = JSON.parse(localStorage.getItem(key) || "[]");
-      } catch {
-        ring = [];
+    if (prev !== null && prev !== value && coursesOf(prev) !== JSON.stringify(state.courses)) {
+      const ring = readRing();
+      const newest = ring[ring.length - 1];
+      const duplicate = newest && coursesOf(newest.value) === coursesOf(prev);
+      const sameBurst = newest && now - newest.t < BACKUP_BURST_MS;
+      if (!duplicate && !sameBurst) {
+        ring.push({ t: now, value: prev });
+        while (ring.length > BACKUP_LIMIT) ring.shift();
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(ring));
       }
-      ring.push({ t: Date.now(), value: prev });
-      while (ring.length > 5) ring.shift();
-      localStorage.setItem(key, JSON.stringify(ring));
     }
   } catch {
     /* backups are best-effort */
@@ -57,15 +89,30 @@ export function saveState(state: TrackerState): void {
   }
 }
 
+export interface AutoBackup {
+  t: number;
+  courses: Course[];
+  skipped: number;
+}
+
+/** Automatic backups, newest first. */
+export function listAutoBackups(): AutoBackup[] {
+  return readRing()
+    .map((e) => {
+      try {
+        const { courses, skipped } = sanitizeCourses(JSON.parse(e.value).courses);
+        return { t: e.t, courses, skipped };
+      } catch {
+        return null;
+      }
+    })
+    .filter((b): b is AutoBackup => !!b)
+    .reverse();
+}
+
 export function latestAutoBackup(): { t: number; state: Partial<TrackerState> } | null {
-  try {
-    const ring = JSON.parse(localStorage.getItem(STORAGE_KEY + "::backups") || "[]");
-    if (!ring.length) return null;
-    const last = ring[ring.length - 1];
-    return { t: last.t, state: JSON.parse(last.value) };
-  } catch {
-    return null;
-  }
+  const b = listAutoBackups()[0];
+  return b ? { t: b.t, state: { courses: b.courses } } : null;
 }
 
 export function readFlag(key: string): string | null {

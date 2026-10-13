@@ -166,7 +166,7 @@ function Steps() {
         <b>3.</b> Click <b>"Expand all"</b> if you see it, then press <b>Ctrl+A</b> / <b>Cmd+A</b> and copy (<b>Ctrl+C</b> / <b>Cmd+C</b>).
         <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl bg-panel-2 px-3 py-2.5 text-[12.5px] text-muted">
           <a
-            href={BOOKMARKLET}
+            ref={(el) => el?.setAttribute("href", BOOKMARKLET)}
             onClick={(e) => e.preventDefault()}
             title="Drag this to your bookmarks bar. Clicking it here does nothing."
             className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border border-accent px-2.5 py-1 font-semibold text-accent"

@@ -13,7 +13,11 @@
       "Undo and redo now cover every change, and the app keeps working offline once opened",
       "The AEDS Assistant and Sync from StudIP got a fresh look that follows dark mode",
       "New Appearance setting with six colour palettes (Classic, Ocean, Forest, Plum, Sunset, Graphite), each in light and dark",
-      "What-if courses now stay when you leave What-if mode and are cleared only with the new 'Clear what-if courses' button (with undo); CSV export and StudIP sync no longer treat them as real courses"
+      "What-if courses now stay when you leave What-if mode and are cleared only with the new 'Clear what-if courses' button (with undo); CSV export and StudIP sync no longer treat them as real courses",
+      "Restore automatic backup now lists your earlier versions to choose from, and automatic backups are kept only when your course list actually changes",
+      "CSV import understands files saved by Excel with German settings (semicolons, decimal commas)",
+      "A damaged backup file or saved entry can no longer break the app; unreadable entries are skipped and reported",
+      "Undo from the 'Removed' message now always brings back that course, and the countdown shows how long ago a passed graduation date was"
     ]
   },
   {

@@ -15,12 +15,24 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Hashed assets from older deploys are never requested again; keep the cache
+// from growing forever by dropping the oldest ones past this many.
+const MAX_ASSETS = 80;
+
+async function pruneAssets(cache) {
+  const assets = (await cache.keys()).filter((r) => new URL(r.url).pathname.includes("/assets/"));
+  for (const r of assets.slice(0, Math.max(0, assets.length - MAX_ASSETS))) await cache.delete(r);
+}
+
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE);
   const hit = await cache.match(request);
   if (hit) return hit;
   const res = await fetch(request);
-  if (res.ok) cache.put(request, res.clone());
+  if (res.ok) {
+    await cache.put(request, res.clone());
+    pruneAssets(cache);
+  }
   return res;
 }
 

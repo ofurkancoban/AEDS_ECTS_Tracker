@@ -34,7 +34,7 @@ export interface Catalog {
   source: "embedded" | "fetched";
 }
 
-export function parseCSV(text: string): string[][] {
+export function parseCSV(text: string, delimiter = ","): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
@@ -49,7 +49,7 @@ export function parseCSV(text: string): string[][] {
         } else inQ = false;
       } else field += ch;
     } else if (ch === '"') inQ = true;
-    else if (ch === ",") {
+    else if (ch === delimiter) {
       row.push(field);
       field = "";
     } else if (ch === "\n" || ch === "\r") {
