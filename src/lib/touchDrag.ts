@@ -14,6 +14,27 @@ interface Session {
   offsetY: number;
   over: Element | null;
   accepted: boolean;
+  x: number;
+  y: number;
+  raf: number;
+}
+
+const EDGE = 60;
+const MAX_SPEED = 14;
+
+/** Speed for edge auto-scroll: 0 away from the edge, up to MAX_SPEED right at it. */
+function edgeSpeed(pos: number, start: number, end: number): number {
+  if (pos < start + EDGE) return -Math.ceil(((start + EDGE - pos) / EDGE) * MAX_SPEED);
+  if (pos > end - EDGE) return Math.ceil(((pos - (end - EDGE)) / EDGE) * MAX_SPEED);
+  return 0;
+}
+
+function scrollableX(el: Element | null): HTMLElement | null {
+  for (let n = el as HTMLElement | null; n && n !== document.body; n = n.parentElement) {
+    const o = getComputedStyle(n).overflowX;
+    if ((o === "auto" || o === "scroll") && n.scrollWidth > n.clientWidth) return n;
+  }
+  return null;
 }
 
 function fire(type: string, target: Element, data: DataTransfer, x: number, y: number, related?: Element | null): boolean {
@@ -60,9 +81,39 @@ export function installTouchDrag(): () => void {
     ghost.style.top = rect.top + "px";
     document.body.appendChild(ghost);
     el.classList.add("touch-dragging");
-    s = { source: el, data, ghost, offsetX: x - rect.left, offsetY: y - rect.top, over: null, accepted: false };
+    s = { source: el, data, ghost, offsetX: x - rect.left, offsetY: y - rect.top, over: null, accepted: false, x, y, raf: 0 };
     suppressClick = true;
     navigator.vibrate?.(12);
+    s.raf = requestAnimationFrame(autoScroll);
+  };
+
+  // Hit-test the point under the finger and tell the drop zone about it.
+  const track = () => {
+    if (!s) return;
+    const under = document.elementFromPoint(s.x, s.y);
+    if (under !== s.over) {
+      if (s.over) fire("dragleave", s.over, s.data, s.x, s.y, under);
+      if (under) fire("dragenter", under, s.data, s.x, s.y, s.over);
+      s.over = under;
+    }
+    // dispatchEvent returns false when a handler called preventDefault, i.e. the target accepts the drop.
+    s.accepted = under ? !fire("dragover", under, s.data, s.x, s.y) : false;
+  };
+
+  // Keeps scrolling while the finger rests near an edge, so off-screen targets are reachable.
+  const autoScroll = () => {
+    if (!s) return;
+    const dy = edgeSpeed(s.y, 0, window.innerHeight);
+    if (dy) window.scrollBy(0, dy);
+    const row = scrollableX(document.elementFromPoint(s.x, s.y));
+    let dx = 0;
+    if (row) {
+      const r = row.getBoundingClientRect();
+      dx = edgeSpeed(s.x, Math.max(0, r.left), Math.min(window.innerWidth, r.right));
+      if (dx) row.scrollLeft += dx;
+    }
+    if (dx || dy) track();
+    s.raf = requestAnimationFrame(autoScroll);
   };
 
   const onStart = (e: TouchEvent) => {
@@ -83,26 +134,11 @@ export function installTouchDrag(): () => void {
     }
     if (!s) return;
     e.preventDefault();
+    s.x = t.clientX;
+    s.y = t.clientY;
     s.ghost.style.left = t.clientX - s.offsetX + "px";
     s.ghost.style.top = t.clientY - s.offsetY + "px";
-    const under = document.elementFromPoint(t.clientX, t.clientY);
-    if (under !== s.over) {
-      if (s.over) fire("dragleave", s.over, s.data, t.clientX, t.clientY, under);
-      if (under) fire("dragenter", under, s.data, t.clientX, t.clientY, s.over);
-      s.over = under;
-    }
-    // dispatchEvent returns false when a handler called preventDefault, i.e. the target accepts the drop.
-    s.accepted = under ? !fire("dragover", under, s.data, t.clientX, t.clientY) : false;
-    // Scroll near the screen edges so far-away targets are reachable.
-    const edge = 70;
-    if (t.clientY < edge) window.scrollBy(0, -12);
-    else if (t.clientY > window.innerHeight - edge) window.scrollBy(0, 12);
-    const row = under?.closest(".overflow-x-auto");
-    if (row) {
-      const r = row.getBoundingClientRect();
-      if (t.clientX < r.left + edge) row.scrollLeft -= 12;
-      else if (t.clientX > r.right - edge) row.scrollLeft += 12;
-    }
+    track();
   };
 
   const onEnd = (e: TouchEvent) => {
@@ -111,6 +147,7 @@ export function installTouchDrag(): () => void {
     const t = e.changedTouches[0];
     const x = t?.clientX ?? 0;
     const y = t?.clientY ?? 0;
+    cancelAnimationFrame(s.raf);
     if (s.over && s.accepted) fire("drop", s.over, s.data, x, y);
     else if (s.over) fire("dragleave", s.over, s.data, x, y, null);
     fire("dragend", s.source, s.data, x, y);

@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { categoryById } from "../lib/constants";
 import type { CategoryId, Status } from "../lib/types";
@@ -73,6 +73,7 @@ export function Modal({
   footer?: ReactNode;
   width?: string;
 }) {
+  const titleId = useId();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -90,6 +91,7 @@ export function Modal({
       <div
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
         className={cx(
           "pop flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-line bg-panel shadow-[var(--shadow-lg)] sm:rounded-3xl",
           width,
@@ -99,7 +101,7 @@ export function Modal({
         {title && (
           <div className="flex items-start gap-3 px-6 pt-5 pb-3">
             <div className="min-w-0 flex-1">
-              <h2 className="font-serif text-xl font-semibold tracking-tight">{title}</h2>
+              <h2 id={titleId} className="font-serif text-xl font-semibold tracking-tight">{title}</h2>
               {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
             </div>
             <IconButton label="Close" onClick={onClose} className="-mr-2 -mt-1">

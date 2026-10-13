@@ -24,6 +24,17 @@ describe("buildCourseContext", () => {
     );
   });
 
+  it("does not count Additional courses toward the 120 ECTS total", () => {
+    const ctx = buildCourseContext(
+      [course("wir821", "economics", "SoSe24", "completed", "2.0"), course("wir890", "additional", "SoSe25", "completed", "1.0")],
+      "",
+    )!;
+    expect(ctx.split("\n")[0]).toBe("My ECTS Tracker progress (6/120 ECTS completed):");
+    expect(ctx).toContain("Additional (6 ECTS) - completed: " + course("wir890", "additional", "SoSe25", "completed").name);
+    // Additional grades stay out of the overall GPA too.
+    expect(ctx).toContain("Overall GPA: 2.00");
+  });
+
   it("returns null without real courses", () => {
     expect(buildCourseContext([], "")).toBeNull();
     expect(buildCourseContext([course("wir821", "economics", "SoSe24", "completed", "1.0", { hypothetical: true })], "")).toBeNull();

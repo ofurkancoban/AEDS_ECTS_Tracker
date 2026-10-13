@@ -64,9 +64,18 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
       )}
     >
       <div className={cx("flex items-center gap-3", compact ? "px-3 py-2" : "px-3.5 py-2.5")}>
-        <button
+        {/* A div, not a <button>: Chrome won't start a drag from inside a button. */}
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setOpen((o) => !o)}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setOpen((o) => !o);
+            }
+          }}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
           aria-expanded={open}
         >
           <span
@@ -107,7 +116,7 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
               {failed && <Badge tone="danger">failed</Badge>}
             </span>
           </span>
-        </button>
+        </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
           {course.status === "completed" && (

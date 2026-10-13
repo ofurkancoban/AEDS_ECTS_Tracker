@@ -33,7 +33,7 @@ function copyRootDataFiles(): Plugin {
 export default defineConfig({
   base: "./",
   plugins: [react(), tailwindcss(), copyRootDataFiles()],
-  test: { environment: "happy-dom", include: ["src/**/*.test.ts"] },
+  test: { environment: "happy-dom", include: ["src/**/*.test.{ts,tsx}"] },
   build: {
     target: "es2020",
     chunkSizeWarningLimit: 900,

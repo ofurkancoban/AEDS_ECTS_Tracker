@@ -170,8 +170,13 @@ export function computeStats(
 
   let daysLeft: number | null = null;
   if (opts.graduationDate) {
-    const diff = new Date(opts.graduationDate).getTime() - new Date().setHours(0, 0, 0, 0);
-    daysLeft = Math.ceil(diff / 86400000);
+    // "YYYY-MM-DD" would parse as UTC midnight; compare local calendar days instead
+    // so the count isn't a day off east of UTC (and across DST changes).
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(opts.graduationDate);
+    const target = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(opts.graduationDate);
+    target.setHours(0, 0, 0, 0);
+    const diff = target.getTime() - new Date().setHours(0, 0, 0, 0);
+    daysLeft = isNaN(diff) ? null : Math.round(diff / 86400000);
   }
 
   const compulsoryDone = catalog.compulsory.filter(doneCode);

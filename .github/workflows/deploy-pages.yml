@@ -41,6 +41,11 @@ jobs:
           npm test
           npm run build
 
+      - name: End-to-end tests
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+
       - name: Inject rating token
         env:
           RATING_CLIENT_TOKEN: ${{ secrets.RATING_CLIENT_TOKEN }}

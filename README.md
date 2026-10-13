@@ -100,7 +100,9 @@ The module catalog lives in `catalog.csv` (one row per module: `category, code, 
 - React 18 + TypeScript, built with Vite and styled with Tailwind CSS v4; icons from lucide-react, self-hosted Fraunces, Inter and JetBrains Mono fonts
 - `src/lib/` holds the framework-free logic (catalog parsing, semesters, GPA and requirement stats, planning algorithms, storage, import/export), ported one to one from the classic UI so both give the same answers
 - Data stays in the same `localStorage` key and format as before, so switching between the new and the classic view loses nothing
-- Unit tests for the logic layer with Vitest (`npm test`), run in CI before every deploy
+- Tests, all run in CI before every deploy:
+  - `npm test`: Vitest unit tests for the logic layer (GPA, requirements, planning, import/export, StudIP parsing, assistant context, palettes including a WCAG contrast check) plus React Testing Library tests that drive the whole app in happy-dom
+  - `npm run test:e2e`: Playwright end-to-end tests against the production build on desktop and a mobile device profile (drag and drop, touch long-press drag, offline mode, QR share, every palette); third-party services are mocked, and the fixture transcript in `e2e/fixtures/` is synthetic
 - Development: `npm install`, `npm run dev`; production build: `npm run build` (output in `dist/`, deployed to GitHub Pages by `.github/workflows/deploy-pages.yml`)
 - The QR code encoder is a from-scratch implementation of the relevant parts of ISO/IEC 18004 (versions 1-10, error correction level L), validated by round-tripping through an independent decoder
 

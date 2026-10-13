@@ -105,10 +105,31 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
 
   // Debounced persistence, same key and shape as the classic UI.
   const saveTimer = useRef<number | undefined>(undefined);
+  const dirty = useRef(false);
   useEffect(() => {
     window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => saveState(state), 300);
+    dirty.current = true;
+    saveTimer.current = window.setTimeout(() => {
+      dirty.current = false;
+      saveState(state);
+    }, 300);
   }, [state]);
+  // Don't lose the last edit if the tab is closed or hidden within the debounce window.
+  useEffect(() => {
+    const flush = () => {
+      if (!dirty.current) return;
+      window.clearTimeout(saveTimer.current);
+      dirty.current = false;
+      saveState(stateRef.current);
+    };
+    const onVisibility = () => document.visibilityState === "hidden" && flush();
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   // Follow catalog renames once the live catalog arrives.
   useEffect(() => {

@@ -81,7 +81,8 @@ function Palette({ onClose }: { onClose: () => void }) {
       addablePool(id, catalog).forEach((label) => {
         if (seen.has(label)) return;
         seen.add(label);
-        const code = codeOf(label);
+        // resolveCode also finds codes without digits (the thesis module "mam").
+        const code = codeOf(label) || resolveCode(label, catalog);
         const c = catalogCourse(code, catalog);
         out.push({ label, code, title: c?.name || label.replace(/^[a-z]+\d+\s*-\s*/i, ""), category: c?.category || id, ects: c?.ects || defaultEctsFor(id) });
       });
