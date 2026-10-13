@@ -388,6 +388,7 @@ export function useChangelog() {
 export function ChangelogModal({ open, onClose, entries }: { open: boolean; onClose: () => void; entries: ChangelogEntry[] }) {
   return (
     <Modal open={open} onClose={onClose} title="What's new" width="max-w-xl" footer={<Button variant="primary" onClick={onClose}>Got it</Button>}>
+      {entries.length === 0 && <p className="text-body-sm text-muted">Loading…</p>}
       <div className="relative grid gap-6 border-l border-line pl-5">
         {entries.slice(0, 8).map((e, i) => (
           <div key={e.version} className="relative">

@@ -62,7 +62,8 @@ test("What's new lists each change as a bullet point", async ({ page }) => {
   await page.getByRole("button", { name: "What's new" }).click();
   const dlg = page.getByRole("dialog", { name: "What's new" });
   const items = dlg.locator("li");
-  expect(await items.count()).toBeGreaterThan(3);
+  // The notes load asynchronously; wait for them instead of counting at once.
+  await expect.poll(() => items.count()).toBeGreaterThan(3);
   const style = await items.first().evaluate((li) => {
     const cs = getComputedStyle(li);
     return { display: cs.display, marker: getComputedStyle(li.parentElement!).listStyleType };
