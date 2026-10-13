@@ -28,7 +28,8 @@
       "The logo and browser tab icon follow your colour palette, phones show more content at the top, and Appearance has a new Compact density option",
       "Better accessibility: higher text contrast for small and secondary text in every palette, dialogs now block the page behind them for keyboard and screen-reader users, and the closed assistant panel can no longer be reached with Tab",
       "Automatic file backup (Chrome and Edge on a computer): choose a file once, for example in your iCloud Drive, OneDrive or Dropbox folder, and it is updated a few seconds after every change. On iPhone, 'Save backup to Files' puts a copy in iCloud Drive in one tap",
-      "Found a problem? 'Report a problem' in the footer (and on the error screen) opens a pre-filled GitHub issue with technical details only, never your courses or grades"
+      "Found a problem? 'Report a problem' in the footer (and on the error screen) opens a pre-filled GitHub issue with technical details only, never your courses or grades",
+      "Credits beyond a category's requirement (for example a seventh Economics elective) no longer count toward the 120 ECTS or fill another category's gap; the tracker marks them '+6 over' and offers to move a course to Specialization when it still needs credits. 'Ready to graduate' now also checks every category's minimum"
     ]
   },
   {

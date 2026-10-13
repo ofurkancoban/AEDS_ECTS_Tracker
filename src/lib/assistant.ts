@@ -162,8 +162,9 @@ export function buildCourseContext(courses: Course[], targetGradeRaw: string): s
   CATEGORIES.forEach((z) => {
     const g = byCat[z.id];
     if (!g) return;
-    // Additional courses are listed but, as in the tracker, don't count toward the 120.
-    if (!z.excludedFromTotal) totalCompleted += g.completedEcts;
+    // As in the tracker: Additional doesn't count toward the 120, and no category
+    // counts beyond its own requirement.
+    if (!z.excludedFromTotal) totalCompleted += Math.min(g.completedEcts, z.required);
     const parts: string[] = [];
     if (g.completed.length) parts.push("completed: " + g.completed.join("; "));
     if (g.inProgress.length) parts.push("in progress: " + g.inProgress.join("; "));

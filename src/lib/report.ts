@@ -65,7 +65,7 @@ export function buildReport({ state, stats, catalog, path, now = new Date() }: R
     .map(
       (c) => `<tr>
         <td><span class="dot" style="background:var(--cat-${c.id})"></span>${e(c.name)}${c.excludedFromTotal ? ' <span class="muted">(not counted)</span>' : ""}</td>
-        <td class="n">${c.required || "-"}</td><td class="n">${c.completed}</td><td class="n">${c.inProgress}</td><td class="n">${c.planned}</td>
+        <td class="n">${c.required || "-"}</td><td class="n">${c.completed}${c.overflow && c.required ? ` <span class="muted">(+${c.overflow} over)</span>` : ""}</td><td class="n">${c.inProgress}</td><td class="n">${c.planned}</td>
         <td class="n">${c.required ? c.remaining : "-"}</td><td class="n">${c.gpa || "-"}</td>
         <td class="w">${bar(c.completed, c.required, "#2f6f6d")}</td></tr>`,
     )

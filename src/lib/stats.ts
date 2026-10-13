@@ -27,6 +27,10 @@ export interface CategoryStats extends Category {
   compulsoryCodes: string[];
   compulsoryDone: number;
   remaining: number; // after completed + in progress + planned
+  /** What this category contributes toward the 120 ECTS: never more than it requires. */
+  counted: { completed: number; inProgress: number; planned: number };
+  /** Credits beyond the requirement (completed + running + planned); they don't count toward the 120. */
+  overflow: number;
 }
 
 export interface Stats {
@@ -95,6 +99,15 @@ export function attemptNumbers(courses: Course[]): Map<string, number> {
   return out;
 }
 
+/** A category's contribution toward the total, filled in order: completed, running, planned. */
+function capped(required: number, completed: number, inProgress: number, planned: number, excluded: boolean) {
+  if (excluded) return { counted: { completed: 0, inProgress: 0, planned: 0 }, overflow: 0 };
+  const c = Math.min(completed, required);
+  const i = Math.min(inProgress, required - c);
+  const p = Math.min(planned, required - c - i);
+  return { counted: { completed: c, inProgress: i, planned: p }, overflow: Math.max(0, completed + inProgress + planned - required) };
+}
+
 export function computeStats(
   courses: Course[],
   catalog: Catalog,
@@ -120,13 +133,16 @@ export function computeStats(
       compulsoryCodes,
       compulsoryDone: compulsoryCodes.filter(doneCode).length,
       remaining: Math.max(0, cat.required - completed - inProgress - planned),
+      ...capped(cat.required, completed, inProgress, planned, !!cat.excludedFromTotal),
     };
   });
 
+  // Totals toward the 120 use each category's capped contribution: credits
+  // beyond a category's requirement can't fill another category's gap.
   const counted = categories.filter((c) => !c.excludedFromTotal);
-  const completed = counted.reduce((a, c) => a + c.completed, 0);
-  const inProgress = counted.reduce((a, c) => a + c.inProgress, 0);
-  const planned = counted.reduce((a, c) => a + c.planned, 0);
+  const completed = counted.reduce((a, c) => a + c.counted.completed, 0);
+  const inProgress = counted.reduce((a, c) => a + c.counted.inProgress, 0);
+  const planned = counted.reduce((a, c) => a + c.counted.planned, 0);
 
   const realGraded = real.filter((c) => graded(c) && c.category !== "additional");
   const overall = gpaOf(realGraded);
@@ -183,7 +199,8 @@ export function computeStats(
   const compulsoryAny = catalog.compulsory.filter((code) => real.some((c) => !isFail(c) && codeOf(c.name) === code));
   const missingCompulsory = catalog.compulsory.filter((c) => !compulsoryDone.includes(c)).map((c) => labelForCode(c, catalog));
   const missingGrades = real.filter((c) => c.status === "completed" && (!c.grade || !c.grade.trim()));
-  const ectsMet = completed >= TOTAL_REQUIRED;
+  // Met only when every category has its own minimum (the minimums add up to 120).
+  const ectsMet = counted.every((c) => c.completed >= c.required) && completed >= TOTAL_REQUIRED;
   const allCompulsory = compulsoryDone.length === catalog.compulsory.length;
 
   const backupDaysAgo = opts.lastBackupAt ? Math.floor((Date.now() - new Date(opts.lastBackupAt).getTime()) / 86400000) : null;
@@ -193,7 +210,7 @@ export function computeStats(
     completed,
     inProgress,
     planned,
-    remaining: Math.max(0, TOTAL_REQUIRED - completed - inProgress - planned),
+    remaining: counted.reduce((a, c) => a + c.remaining, 0),
     gpa: overall.gpa,
     gradePoints: overall.points,
     gradedEcts: overall.ects,

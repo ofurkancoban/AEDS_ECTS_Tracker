@@ -89,6 +89,11 @@ function CategorySection({
           <CategoryDot id={cat.id} size={11} />
           <h3 className="truncate font-serif text-title font-semibold">{cat.name}</h3>
           {cat.gpa && <span className="num whitespace-nowrap rounded-md bg-ink/5 px-1.5 py-0.5 text-caption font-semibold text-muted">⌀ {cat.gpa}</span>}
+          {cat.overflow > 0 && cat.required > 0 && (
+            <span className="num whitespace-nowrap rounded-md bg-warn-soft px-1.5 py-0.5 text-caption font-semibold text-warn" title={`${cat.overflow} ECTS beyond the requirement don't count toward the 120`}>
+              +{cat.overflow} over
+            </span>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-3">
           {req > 0 ? (

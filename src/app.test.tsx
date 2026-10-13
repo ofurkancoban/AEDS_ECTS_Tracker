@@ -628,3 +628,21 @@ describe("visual features", () => {
     expect(localStorage.getItem("ects-tracker-celebrated")).toBe("1");
   });
 });
+
+describe("credits beyond a requirement", () => {
+  it("warns about an over-full category and moves a course with one click", async () => {
+    const econ = ["wir821", "wir873", "wir874", "wir876", "wir878", "wir893", "wir901"].map((c) => course(c, "economics", "SoSe25", "completed", "2.0"));
+    seed(econ);
+    const { user } = await renderApp();
+    const panel = screen.getByRole("region", { name: "Needs attention" });
+    await user.click(within(panel).queryByRole("button", { name: /Show all/ }) ?? panel);
+    const note = within(panel)
+      .getAllByRole("listitem")
+      .find((li) => /more than it needs/.test(li.textContent || ""))!;
+    expect(note.textContent).toMatch(/Economics has 6 ECTS more than it needs/);
+    expect(screen.getByText(/ECTS to go/).textContent).toMatch(/^84 ECTS to go/);
+    await user.click(within(note).getByRole("button", { name: /Move to SPEC/ }));
+    await waitFor(() => expect(saved().filter((c) => c.category === "specialization")).toHaveLength(1));
+    expect(screen.getByText(/ECTS to go/).textContent).toMatch(/^78 ECTS to go/);
+  });
+});

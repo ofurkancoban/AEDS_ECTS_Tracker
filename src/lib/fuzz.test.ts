@@ -46,6 +46,9 @@ describe("fuzz", () => {
       if (s.gpa) expect(Number.isFinite(parseFloat(s.gpa))).toBe(true);
       if (s.projectedGpa) expect(Number.isFinite(parseFloat(s.projectedGpa))).toBe(true);
       s.categories.forEach((c) => expect(c.remaining).toBeGreaterThanOrEqual(0));
+      // The four parts of the progress ring always add up to exactly 120.
+      expect(s.completed + s.inProgress + s.planned + s.remaining).toBe(120);
+      if (s.ectsMet) s.categories.filter((c) => !c.excludedFromTotal).forEach((c) => expect(c.completed).toBeGreaterThanOrEqual(c.required));
       s.semesterGpa.forEach((x) => expect(Number.isFinite(x.avg)).toBe(true));
 
       const path = graduationPath(courses, s, cat);

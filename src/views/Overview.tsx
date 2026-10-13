@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ChevronDown,
   CircleAlert,
+  Layers,
   Clock3,
   DatabaseBackup,
   Flag,
@@ -23,7 +24,8 @@ import { OpenPanel } from "../components/OpenPanel";
 import { useCategoryDrop } from "../components/dnd";
 import { Bar, Button, CategoryDot, SectionTitle, cx } from "../components/ui";
 import { labelForCode } from "../lib/catalog";
-import { LECTURE_WEEKS, MAX_ECTS_PER_SEMESTER, TOTAL_REQUIRED } from "../lib/constants";
+import { LECTURE_WEEKS, MAX_ECTS_PER_SEMESTER, TOTAL_REQUIRED, categoryById } from "../lib/constants";
+import { overflowNotes } from "../lib/overflow";
 import { lastChanceCourses, notOfferedAnymore } from "../lib/planning";
 import { compareSemesters, planningSemester } from "../lib/semesters";
 import { isFail } from "../lib/stats";
@@ -32,7 +34,7 @@ import { useMediaQuery } from "../lib/useMediaQuery";
 import { useTracker } from "../state";
 
 export function Overview({ onBackup, onImport }: { onBackup: () => void; onImport: () => void }) {
-  const { stats, state, courses, catalog, patch, setView, dismissBackupReminder, openAdd, setStudipOpen } = useTracker();
+  const { stats, state, courses, catalog, patch, setView, dismissBackupReminder, openAdd, setStudipOpen, updateCourse, toast } = useTracker();
   const fresh = courses.length === 0;
   const small = useMediaQuery("(max-width: 639px)");
   const plan = planningSemester();
@@ -44,6 +46,7 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
 
   const lastChance = useMemo(() => lastChanceCourses(stats, catalog), [stats, catalog]);
   const gone = useMemo(() => notOfferedAnymore(courses, catalog), [courses, catalog]);
+  const overflow = useMemo(() => overflowNotes(courses, stats, catalog), [courses, stats, catalog]);
   const overloaded = useMemo(() => {
     const by: Record<string, number> = {};
     courses.forEach((c) => {
@@ -258,6 +261,37 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
               </Button>
             ),
           },
+          ...overflow.map((o) => ({
+            key: "over-" + o.category,
+            tone: "warn" as const,
+            icon: <Layers size={16} />,
+            text: (
+              <>
+                {o.category === "further" ? (
+                  <>
+                    <b>Further modules</b> ({o.overflow} ECTS) don't count toward the 120 ECTS on their own.
+                  </>
+                ) : (
+                  <>
+                    <b>{categoryById(o.category).name}</b> has <b className="num">{o.overflow}</b> ECTS more than it needs; those don't count toward the 120.
+                  </>
+                )}
+                {o.move ? ` Moving ${o.move.course.name.split(" - ")[0].toUpperCase()} to ${categoryById(o.move.to).name} would use them.` : " No other category has room for them."}
+              </>
+            ),
+            action: o.move ? (
+              <Button
+                size="sm"
+                variant="soft"
+                onClick={() => {
+                  updateCourse(o.move!.course.id, { category: o.move!.to });
+                  toast({ message: `Moved ${o.move!.course.name.split(" - ")[0].toUpperCase()} to ${categoryById(o.move!.to).name}`, tone: "success" });
+                }}
+              >
+                Move to {categoryById(o.move.to).short}
+              </Button>
+            ) : undefined,
+          })),
           catalog.newCodes.length > 0 && {
             key: "new",
             tone: "accent" as const,
@@ -490,6 +524,11 @@ function CategoryCard({ cat }: { cat: CategoryStats }) {
         <CategoryDot id={cat.id} size={10} />
         <span className="flex-1 truncate font-semibold">{cat.name}</span>
         {done && <ShieldCheck size={16} className="text-accent" />}
+        {cat.overflow > 0 && !cat.excludedFromTotal && cat.required > 0 && (
+          <span className="num rounded-md bg-warn-soft px-1.5 py-0.5 text-caption font-semibold text-warn" title={`${cat.overflow} ECTS beyond the requirement don't count toward the 120`}>
+            +{cat.overflow} over
+          </span>
+        )}
         {cat.gpa && <span className="num whitespace-nowrap rounded-md bg-ink/5 px-1.5 py-0.5 text-caption font-semibold text-muted">⌀ {cat.gpa}</span>}
       </div>
       {req > 0 ? (

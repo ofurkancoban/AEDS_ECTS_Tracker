@@ -48,7 +48,9 @@ export function Checklist() {
                   <CategoryDot id={c.id} /> {c.name}: {c.required} ECTS
                 </span>
               }
-              detail={`${c.completed} completed${c.inProgress ? `, ${c.inProgress} in progress` : ""}${c.planned ? `, ${c.planned} planned` : ""}`}
+              detail={`${c.completed} completed${c.inProgress ? `, ${c.inProgress} in progress` : ""}${c.planned ? `, ${c.planned} planned` : ""}${
+                c.overflow ? ` (${c.overflow} beyond the requirement, not counted)` : ""
+              }`}
             />
           ))}
         </Group>
