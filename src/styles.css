@@ -6,59 +6,59 @@
    few derived tints. Everything reads these variables so dark mode is a
    single class swap on <html>. */
 :root {
-  --ink: #1c2333;
-  --paper: #f6f3ec;
+  --ink: #0f1a17;
+  --paper: #f6f8f7;
   --panel: #ffffff;
-  --panel-2: #fbf9f4;
-  --accent: #2f6f6d;
-  --accent-soft: #e3efed;
-  --warn: #9d5727;
-  --warn-soft: #f6e9df;
+  --panel-2: #f9fbfa;
+  --accent: #04704f;
+  --accent-soft: #e1f3ec;
+  --warn: #c2410c;
+  --warn-soft: #fdeee4;
   --danger: #a33a32;
   --danger-soft: #f6e1de;
-  --line: #e4ded0;
-  --line-strong: #d3cbb8;
-  --muted: #6b6558;
-  --faint: #716c62;
+  --line: #e2e8e5;
+  --line-strong: #cbd5d0;
+  --muted: #56645e;
+  --faint: #5f6b66;
   --shadow: 0 1px 2px rgba(28, 35, 51, 0.04), 0 8px 24px -12px rgba(28, 35, 51, 0.12);
   --shadow-lg: 0 24px 60px -20px rgba(28, 35, 51, 0.35);
 
-  --cat-economics: #2f6f6d;
-  --cat-empirical: #3f5c8c;
-  --cat-datascience: #a87b1e;
-  --cat-specialization: #7a4a7e;
-  --cat-thesis: #1c2333;
-  --cat-further: #5e7a5a;
-  --cat-additional: #8a8578;
+  --cat-economics: #04704f;
+  --cat-empirical: #2563eb;
+  --cat-datascience: #b45309;
+  --cat-specialization: #7e22ce;
+  --cat-thesis: #0f1a17;
+  --cat-further: #0e7490;
+  --cat-additional: #7d8a85;
 
   color-scheme: light;
 }
 
 .dark {
-  --ink: #ece8dc;
-  --paper: #13161d;
-  --panel: #1b1f28;
-  --panel-2: #20252f;
-  --accent: #5ab6b2;
-  --accent-soft: #1d3332;
-  --warn: #e29a5d;
-  --warn-soft: #3a2a1d;
+  --ink: #e6efeb;
+  --paper: #0a0f0d;
+  --panel: #111815;
+  --panel-2: #161f1b;
+  --accent: #34d399;
+  --accent-soft: #0f2e23;
+  --warn: #fb923c;
+  --warn-soft: #3b2416;
   --danger: #e2786e;
   --danger-soft: #3b2120;
-  --line: #2c323e;
-  --line-strong: #3a4250;
-  --muted: #9aa1ae;
-  --faint: #878d98;
+  --line: #1f2a25;
+  --line-strong: #2b3933;
+  --muted: #97a8a0;
+  --faint: #82938b;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
 
-  --cat-economics: #5ab6b2;
-  --cat-empirical: #7d9bd1;
-  --cat-datascience: #d8ab4c;
-  --cat-specialization: #b98bbd;
-  --cat-thesis: #ece8dc;
-  --cat-further: #93b38e;
-  --cat-additional: #a39e92;
+  --cat-economics: #34d399;
+  --cat-empirical: #60a5fa;
+  --cat-datascience: #fbbf24;
+  --cat-specialization: #c084fc;
+  --cat-thesis: #e6efeb;
+  --cat-further: #22d3ee;
+  --cat-additional: #98a59f;
 
   color-scheme: dark;
 }

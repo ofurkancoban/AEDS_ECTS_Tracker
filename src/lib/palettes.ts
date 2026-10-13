@@ -1,6 +1,6 @@
 // Colour palettes for the Appearance setting. The tokens themselves live in
-// styles.css (Classic) and palettes.css (the rest); these swatches only drive
-// the picker.
+// styles.css (Emerald, the default) and palettes.css (the rest); these
+// swatches only drive the picker.
 
 export interface Palette {
   id: string;
@@ -11,6 +11,13 @@ export interface Palette {
 }
 
 export const PALETTES: Palette[] = [
+  {
+    id: "emerald",
+    name: "Emerald",
+    description: "Fresh emerald with orange",
+    light: { paper: "#f6f8f7", panel: "#ffffff", ink: "#0f1a17", accent: "#04704f", warn: "#c2410c" },
+    dark: { paper: "#0a0f0d", panel: "#111815", ink: "#e6efeb", accent: "#34d399", warn: "#fb923c" },
+  },
   {
     id: "classic",
     name: "Classic",
@@ -53,21 +60,51 @@ export const PALETTES: Palette[] = [
     light: { paper: "#f4f4f3", panel: "#ffffff", ink: "#18181b", accent: "#4f46e5", warn: "#bc3f0b" },
     dark: { paper: "#0d0d10", panel: "#16161a", ink: "#ededef", accent: "#8b85ff", warn: "#f59e5b" },
   },
+  {
+    id: "midnight",
+    name: "Midnight Teal",
+    description: "Deep teal with burnt orange",
+    light: { paper: "#f3f6f6", panel: "#ffffff", ink: "#142127", accent: "#0f5e63", warn: "#a14a19" },
+    dark: { paper: "#0c1416", panel: "#131d20", ink: "#e5eeee", accent: "#4fc1c0", warn: "#f0a067" },
+  },
+  {
+    id: "uniblue",
+    name: "Uni Blue",
+    description: "University blue with amber",
+    light: { paper: "#f3f5f8", panel: "#ffffff", ink: "#14213a", accent: "#1f4e8c", warn: "#9c5216" },
+    dark: { paper: "#0d131d", panel: "#141b27", ink: "#e6ebf2", accent: "#7aa7ec", warn: "#eda15f" },
+  },
+  {
+    id: "sage",
+    name: "Sage & Clay",
+    description: "Soft sage with clay",
+    light: { paper: "#f5f4ef", panel: "#ffffff", ink: "#232a24", accent: "#4a6b58", warn: "#93512f" },
+    dark: { paper: "#121512", panel: "#1a1e1a", ink: "#e9ebe4", accent: "#93bfa3", warn: "#e79b78" },
+  },
+  {
+    id: "electric",
+    name: "Electric",
+    description: "Vivid blue with orange",
+    light: { paper: "#f7f8fa", panel: "#ffffff", ink: "#0f172a", accent: "#2563eb", warn: "#c2410c" },
+    dark: { paper: "#0b0d12", panel: "#12151c", ink: "#e8ecf3", accent: "#60a5fa", warn: "#fb923c" },
+  },
 ];
 
 export const PALETTE_KEY = "ects-tracker-palette";
+/** Used when nothing was chosen; its tokens are the base ones, so it needs no attribute. */
+export const DEFAULT_PALETTE = "emerald";
 
 export function loadPalette(): string {
   try {
-    const id = localStorage.getItem(PALETTE_KEY) || "classic";
-    return PALETTES.some((p) => p.id === id) ? id : "classic";
+    const id = localStorage.getItem(PALETTE_KEY) || DEFAULT_PALETTE;
+    return PALETTES.some((p) => p.id === id) ? id : DEFAULT_PALETTE;
   } catch {
-    return "classic";
+    return DEFAULT_PALETTE;
   }
 }
 
 export function applyPalette(id: string): void {
   const root = document.documentElement;
-  if (id === "classic") root.removeAttribute("data-palette");
+  if (id === DEFAULT_PALETTE) root.removeAttribute("data-palette");
   else root.setAttribute("data-palette", id);
 }

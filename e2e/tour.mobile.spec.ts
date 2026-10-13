@@ -34,10 +34,11 @@ test("the tour works on a phone: docked card, folded while adding, views under M
 
   // Timeline has no tab of its own on a phone: the tour opens it.
   for (let i = 0; i < 12 && (await title.textContent()) !== "Semester by semester"; i++) {
-    const t = await title.textContent();
+    const t = (await title.textContent()) || "";
     if (t === "All your courses") await page.locator('[data-tour="nav-courses"]:visible').click();
     else await tour.getByRole("button", { name: /^(Next|Skip this step)/ }).click();
-    await page.waitForTimeout(150);
+    // A finished task lingers on "Nicely done" for a moment: wait for the next step.
+    await expect(title).not.toHaveText(t);
   }
   await expect(title).toHaveText("Semester by semester");
   await tour.getByRole("button", { name: /^Next/ }).click();

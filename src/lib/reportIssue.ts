@@ -65,7 +65,7 @@ export function diagnostics(): Record<string, string> {
     })(),
     Browser: navigator.userAgent,
     Screen: `${window.innerWidth}x${window.innerHeight} @${window.devicePixelRatio}x`,
-    Theme: `${root.classList.contains("dark") ? "dark" : "light"}, palette ${root.getAttribute("data-palette") || "classic"}, ${root.getAttribute("data-density") || "comfortable"}`,
+    Theme: `${root.classList.contains("dark") ? "dark" : "light"}, palette ${root.getAttribute("data-palette") || "emerald"}, ${root.getAttribute("data-density") || "comfortable"}`,
   };
 }
 

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { importFixture, open } from "./helpers";
 
-const PALETTES = ["classic", "ocean", "forest", "plum", "sunset", "graphite"];
+const PALETTES = ["emerald", "classic", "ocean", "forest", "plum", "sunset", "graphite", "midnight", "uniblue", "sage", "electric"];
 
 function lum(hex: string) {
   let h = hex.replace("#", "");
@@ -29,7 +29,7 @@ for (const palette of PALETTES) {
         return { ink: v("--ink"), paper: v("--paper"), panel: v("--panel"), muted: v("--muted"), accent: v("--accent"), accentSoft: v("--accent-soft"), warn: v("--warn"), warnSoft: v("--warn-soft"), dark: document.documentElement.classList.contains("dark"), attr: document.documentElement.getAttribute("data-palette") };
       });
       expect(tokens.dark).toBe(theme === "dark");
-      expect(tokens.attr).toBe(palette === "classic" ? null : palette);
+      expect(tokens.attr).toBe(palette === "emerald" ? null : palette);
       expect(contrast(tokens.ink, tokens.paper)).toBeGreaterThanOrEqual(7);
       expect(contrast(tokens.muted, tokens.panel)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(tokens.accent, tokens.accentSoft)).toBeGreaterThanOrEqual(4.5);
@@ -47,10 +47,18 @@ test("appearance dialog switches palette and mode live", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: "Appearance" }).click();
   const dlg = page.getByRole("dialog", { name: "Appearance" });
-  for (const name of ["Ocean", "Forest", "Plum", "Sunset", "Graphite", "Classic"]) {
+  // Emerald is the default for someone who never picked one.
+  await expect(dlg.getByRole("button", { name: /^Emerald/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("html")).not.toHaveAttribute("data-palette");
+  for (const name of ["Classic", "Ocean", "Forest", "Plum", "Sunset", "Graphite", "Midnight Teal", "Uni Blue", "Sage & Clay", "Electric", "Emerald"]) {
     await dlg.getByRole("button", { name: new RegExp("^" + name) }).click();
     await expect(dlg.getByRole("button", { name: new RegExp("^" + name) })).toHaveAttribute("aria-pressed", "true");
   }
+  await dlg.getByRole("button", { name: /^Classic/ }).click();
+  await page.reload();
+  // A chosen palette survives a reload, Classic included.
+  await expect(page.locator("html")).toHaveAttribute("data-palette", "classic");
+  await page.getByRole("button", { name: "Appearance" }).click();
   await dlg.getByRole("button", { name: "Dark", exact: true }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await page.reload();

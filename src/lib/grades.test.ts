@@ -5,8 +5,8 @@ describe("gradeTone", () => {
   it("runs from the accent colour at 1.0 to the warning colour at 4.0", () => {
     expect(gradeTone("1.0")!.color).toBe("var(--accent)");
     expect(gradeTone("4.0")!.color).toBe("var(--warn)");
-    expect(gradeTone(2.5)!.color).toBe("color-mix(in oklch, var(--warn) 50%, var(--accent))");
-    expect(gradeTone("2,0")!.color).toBe("color-mix(in oklch, var(--warn) 33%, var(--accent))");
+    expect(gradeTone(2.5)!.color).toBe("color-mix(in oklab, color-mix(in oklch, var(--warn) 50%, var(--accent)) 80%, var(--ink))");
+    expect(gradeTone("2,0")!.color).toBe("color-mix(in oklab, color-mix(in oklch, var(--warn) 33%, var(--accent)) 80%, var(--ink))");
   });
 
   it("marks fails with the danger colour and ignores missing grades", () => {

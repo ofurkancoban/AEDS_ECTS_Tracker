@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { TAG_BG_MIX, TAG_TEXT_MIX } from "../components/ui";
-import { PALETTES, PALETTE_KEY, applyPalette, loadPalette } from "./palettes";
+import { DEFAULT_PALETTE, PALETTES, PALETTE_KEY, applyPalette, loadPalette } from "./palettes";
 
 type Tokens = Record<string, string>;
 
@@ -20,12 +20,13 @@ function block(css: string, selector: string): Tokens {
   return out;
 }
 
-const classicLight = block(baseCss, ":root");
-const classicDark = { ...classicLight, ...block(baseCss, ".dark") };
+// The default palette's tokens are the base ones in styles.css; the others override them.
+const baseLight = block(baseCss, ":root");
+const baseDark = { ...baseLight, ...block(baseCss, ".dark") };
 
 function tokens(id: string, mode: "light" | "dark"): Tokens {
-  if (id === "classic") return mode === "light" ? classicLight : classicDark;
-  const light = { ...classicLight, ...block(paletteCss, `[data-palette="${id}"]`) };
+  if (id === DEFAULT_PALETTE) return mode === "light" ? baseLight : baseDark;
+  const light = { ...baseLight, ...block(paletteCss, `[data-palette="${id}"]`) };
   return mode === "light" ? light : { ...light, ...block(paletteCss, `[data-palette="${id}"].dark`) };
 }
 
@@ -51,8 +52,10 @@ describe("palettes", () => {
     document.documentElement.removeAttribute("data-palette");
   });
 
-  it("has unique ids, with Classic first", () => {
-    expect(PALETTES[0].id).toBe("classic");
+  it("has unique ids, with the default (Emerald) first and Classic still offered", () => {
+    expect(DEFAULT_PALETTE).toBe("emerald");
+    expect(PALETTES[0].id).toBe(DEFAULT_PALETTE);
+    expect(PALETTES.map((p) => p.id)).toContain("classic");
     expect(new Set(PALETTES.map((p) => p.id)).size).toBe(PALETTES.length);
   });
 
@@ -115,18 +118,23 @@ describe("palettes", () => {
     }
   }
 
-  it("loads the saved palette and falls back to Classic", () => {
-    expect(loadPalette()).toBe("classic");
+  it("loads the saved palette and falls back to Emerald", () => {
+    expect(loadPalette()).toBe("emerald");
     localStorage.setItem(PALETTE_KEY, "forest");
     expect(loadPalette()).toBe("forest");
-    localStorage.setItem(PALETTE_KEY, "does-not-exist");
+    // Someone who picked Classic keeps it after the default changed.
+    localStorage.setItem(PALETTE_KEY, "classic");
     expect(loadPalette()).toBe("classic");
+    localStorage.setItem(PALETTE_KEY, "does-not-exist");
+    expect(loadPalette()).toBe("emerald");
   });
 
-  it("applies the palette as a data attribute, none for Classic", () => {
+  it("applies the palette as a data attribute, none for the default", () => {
     applyPalette("plum");
     expect(document.documentElement.getAttribute("data-palette")).toBe("plum");
     applyPalette("classic");
+    expect(document.documentElement.getAttribute("data-palette")).toBe("classic");
+    applyPalette("emerald");
     expect(document.documentElement.hasAttribute("data-palette")).toBe(false);
   });
 });
