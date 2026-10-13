@@ -32,6 +32,7 @@ import { lastChanceCourses, notOfferedAnymore } from "../lib/planning";
 import { compareSemesters, planningSemester } from "../lib/semesters";
 import { isFail } from "../lib/stats";
 import type { CategoryStats } from "../lib/stats";
+import type { CategoryId } from "../lib/types";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useTracker } from "../state";
 
@@ -377,8 +378,10 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {stats.categories
             .filter((c) => !c.excludedFromTotal || c.items.length)
+            // Additional takes the thesis's old place; the thesis closes the list on a row of its own.
+            .sort((a, b) => CARD_ORDER.indexOf(a.id) - CARD_ORDER.indexOf(b.id))
             .map((c) => (
-              <CategoryCard key={c.id} cat={c} />
+              <CategoryCard key={c.id} cat={c} className={c.id === "thesis" ? "sm:col-span-2 xl:col-span-3" : undefined} />
             ))}
         </div>
       </section>
@@ -563,7 +566,9 @@ function WelcomeArt() {
   );
 }
 
-function CategoryCard({ cat }: { cat: CategoryStats }) {
+const CARD_ORDER: CategoryId[] = ["economics", "empirical", "datascience", "specialization", "additional", "further", "thesis"];
+
+function CategoryCard({ cat, className }: { cat: CategoryStats; className?: string }) {
   const { setView } = useTracker();
   const drop = useCategoryDrop(cat.id);
   const req = cat.required || 0;
@@ -579,6 +584,7 @@ function CategoryCard({ cat }: { cat: CategoryStats }) {
       className={cx(
         "card group cursor-pointer p-4 text-left transition hover:-translate-y-0.5 hover:border-line-strong",
         drop.over && "drop-target",
+        className,
       )}
     >
       <div className="flex items-center gap-2">

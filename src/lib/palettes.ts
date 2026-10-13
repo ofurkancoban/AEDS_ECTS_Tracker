@@ -54,13 +54,6 @@ export const PALETTES: Palette[] = [
     dark: { paper: "#191310", panel: "#221a16", ink: "#f2e9e1", accent: "#f08a62", warn: "#e3b054" },
   },
   {
-    id: "graphite",
-    name: "Graphite",
-    description: "Neutral greys with indigo",
-    light: { paper: "#f4f4f3", panel: "#ffffff", ink: "#18181b", accent: "#4f46e5", warn: "#bc3f0b" },
-    dark: { paper: "#0d0d10", panel: "#16161a", ink: "#ededef", accent: "#8b85ff", warn: "#f59e5b" },
-  },
-  {
     id: "midnight",
     name: "Midnight Teal",
     description: "Deep teal with burnt orange",
@@ -80,13 +73,6 @@ export const PALETTES: Palette[] = [
     description: "Soft sage with clay",
     light: { paper: "#f5f4ef", panel: "#ffffff", ink: "#232a24", accent: "#4a6b58", warn: "#93512f" },
     dark: { paper: "#121512", panel: "#1a1e1a", ink: "#e9ebe4", accent: "#93bfa3", warn: "#e79b78" },
-  },
-  {
-    id: "electric",
-    name: "Electric",
-    description: "Vivid blue with orange",
-    light: { paper: "#f7f8fa", panel: "#ffffff", ink: "#0f172a", accent: "#2563eb", warn: "#c2410c" },
-    dark: { paper: "#0b0d12", panel: "#12151c", ink: "#e8ecf3", accent: "#60a5fa", warn: "#fb923c" },
   },
 ];
 

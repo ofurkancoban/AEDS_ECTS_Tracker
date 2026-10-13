@@ -31,7 +31,7 @@ for (const theme of ["light", "dark"] as const) {
 }
 
 // Every palette, light and dark, on the views with the most colour (tags, grades, chips).
-for (const palette of ["ocean", "forest", "plum", "sunset", "graphite"]) {
+for (const palette of ["classic", "ocean", "forest", "plum", "sunset", "midnight", "uniblue", "sage"]) {
   for (const theme of ["light", "dark"] as const) {
     test(`readable colours in ${palette} / ${theme}`, async ({ page }) => {
       await open(page, { palette, theme });

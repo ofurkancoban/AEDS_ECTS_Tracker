@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { importFixture, open } from "./helpers";
 
-const PALETTES = ["emerald", "classic", "ocean", "forest", "plum", "sunset", "graphite", "midnight", "uniblue", "sage", "electric"];
+const PALETTES = ["emerald", "classic", "ocean", "forest", "plum", "sunset", "midnight", "uniblue", "sage"];
 
 function lum(hex: string) {
   let h = hex.replace("#", "");
@@ -50,7 +50,7 @@ test("appearance dialog switches palette and mode live", async ({ page }) => {
   // Emerald is the default for someone who never picked one.
   await expect(dlg.getByRole("button", { name: /^Emerald/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("html")).not.toHaveAttribute("data-palette");
-  for (const name of ["Classic", "Ocean", "Forest", "Plum", "Sunset", "Graphite", "Midnight Teal", "Uni Blue", "Sage & Clay", "Electric", "Emerald"]) {
+  for (const name of ["Classic", "Ocean", "Forest", "Plum", "Sunset", "Midnight Teal", "Uni Blue", "Sage & Clay", "Emerald"]) {
     await dlg.getByRole("button", { name: new RegExp("^" + name) }).click();
     await expect(dlg.getByRole("button", { name: new RegExp("^" + name) })).toHaveAttribute("aria-pressed", "true");
   }
