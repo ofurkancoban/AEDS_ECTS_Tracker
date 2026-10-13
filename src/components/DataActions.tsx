@@ -1,8 +1,9 @@
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Compass } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORIES, CATEGORY_IDS, TOTAL_REQUIRED } from "../lib/constants";
 import { coursesFromCsv, coursesToCsv, decodeShare, encodeShare, shareUrl } from "../lib/io";
 import { encodeQR } from "../lib/qr";
+import { startTour } from "../lib/tour";
 import { graduationPath } from "../lib/planning";
 import { buildReport } from "../lib/report";
 import { canShareFiles, shareBackup } from "../lib/fileBackup";
@@ -333,7 +334,27 @@ const HOW_IT_WORKS = [
 
 export function HowItWorksModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Modal open={open} onClose={onClose} title="How ECTS Tracker works" width="max-w-xl" footer={<Button variant="primary" onClick={onClose}>Got it</Button>}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="How ECTS Tracker works"
+      width="max-w-xl"
+      footer={
+        <>
+          <Button
+            onClick={() => {
+              onClose();
+              startTour();
+            }}
+          >
+            <Compass size={16} /> Take the guided tour
+          </Button>
+          <Button variant="primary" onClick={onClose}>
+            Got it
+          </Button>
+        </>
+      }
+    >
       <div className="grid gap-4">
         {HOW_IT_WORKS.map((s, i) => (
           <div key={s.title} className="flex gap-3">

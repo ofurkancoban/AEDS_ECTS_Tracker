@@ -94,7 +94,7 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
   return (
     <div className="grid grid-cols-1 gap-5">
       {/* Hero */}
-      <section className="card relative overflow-hidden p-5 sm:p-7">
+      <section className="card relative overflow-hidden p-5 sm:p-7" data-tour="hero">
         <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
         <div className="relative grid items-center gap-6 md:grid-cols-[auto_1fr]">
           <div className="mx-auto">
@@ -149,7 +149,7 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
       </section>
 
       {/* KPIs */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-tour="kpis">
         <Kpi
           icon={<Award size={17} />}
           label="Overall GPA"
@@ -372,7 +372,7 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
       />
 
       {/* Categories */}
-      <section>
+      <section data-tour="categories">
         <SectionTitle eyebrow="Requirements" title="Where your credits go" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {stats.categories
@@ -513,7 +513,7 @@ function Welcome({ onSync, onImport, onAdd }: { onSync: () => void; onImport: ()
     { icon: <Plus size={18} />, title: "Add courses yourself", body: "Search the module catalog by code, title or lecturer.", cta: "Add a course", run: onAdd },
   ];
   return (
-    <section className="card relative overflow-hidden p-5 sm:p-7" aria-labelledby="welcome-title">
+    <section className="card relative overflow-hidden p-5 sm:p-7" aria-labelledby="welcome-title" data-tour="welcome">
       <div className="grid items-center gap-6 md:grid-cols-[1fr_220px]">
         <div>
           <div className="eyebrow mb-1">Welcome</div>

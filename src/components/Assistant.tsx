@@ -239,6 +239,7 @@ export default function Assistant() {
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? "Close AEDS AI Assistant" : "Open AEDS AI Assistant chat"}
+          data-tour="assistant"
           className="no-print fixed right-[calc(20px+env(safe-area-inset-right))] bottom-[calc(var(--aeds-bubble-bottom)+env(safe-area-inset-bottom))] z-[9500] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-accent text-white shadow-[0_10px_28px_-8px_var(--accent)] transition hover:scale-105 active:scale-95 dark:text-paper"
         >
           {open ? <X size={24} /> : <MessageCircle size={25} />}
@@ -250,6 +251,7 @@ export default function Assistant() {
         aria-label="AEDS AI Assistant"
         aria-hidden={!open}
         ref={panelRef}
+        data-tour={open ? "assistant-panel" : undefined}
         style={mobile && vv ? { top: vv.top, height: vv.height } : undefined}
         className={cx(
           "no-print fixed z-[9500] flex flex-col overflow-hidden border-line bg-panel shadow-[var(--shadow-lg)] transition-[opacity,transform] duration-200",
@@ -306,7 +308,7 @@ export default function Assistant() {
         </div>
 
         <div className="shrink-0 border-t border-line bg-panel px-3 pt-2 pb-[calc(10px+env(safe-area-inset-bottom))]">
-          <label className="mb-1.5 flex w-fit cursor-pointer items-center gap-2 text-caption text-muted select-none">
+          <label data-tour="assistant-context" className="mb-1.5 flex w-fit cursor-pointer items-center gap-2 text-caption text-muted select-none">
             <input
               type="checkbox"
               checked={include}

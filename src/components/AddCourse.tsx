@@ -147,6 +147,7 @@ function Palette({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Add a course"
+        data-tour="palette"
       >
         {picked ? (
           <Configure entry={picked} onBack={() => setPicked(null)} onDone={onClose} taken={taken} />

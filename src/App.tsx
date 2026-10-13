@@ -2,6 +2,7 @@ import {
   ArchiveRestore,
   CalendarDays,
   CircleHelp,
+  Compass,
   Database,
   Download,
   FileJson,
@@ -46,6 +47,7 @@ import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLab
 import { TOTAL_REQUIRED } from "./lib/constants";
 import { currentSemester } from "./lib/semesters";
 import { hitGlobalCounter, readFlag, writeFlag } from "./lib/storage";
+import { onStartTour, shouldInviteToTour, startTour } from "./lib/tour";
 import { TrackerProvider, useTracker, type View } from "./state";
 import { Courses } from "./views/Courses";
 import { Overview } from "./views/Overview";
@@ -66,6 +68,7 @@ const Planner = lazy(() => import("./views/Planner").then((m) => ({ default: m.P
 const Catalog = lazy(() => import("./views/Catalog").then((m) => ({ default: m.Catalog })));
 const Checklist = lazy(() => import("./views/Checklist").then((m) => ({ default: m.Checklist })));
 const StudipSync = lazy(() => import("./components/StudipSync"));
+const Tour = lazy(() => import("./components/Tour"));
 
 export default function App() {
   return (
@@ -88,6 +91,10 @@ function Shell() {
   const [assistantReady, setAssistantReady] = useState(false);
   const data = useDataActions();
   const changelog = useChangelog();
+  // A first-time visitor gets the tour instead of the "What's new" list.
+  const [firstVisit] = useState(() => shouldInviteToTour(courses.length));
+  const [touring, setTouring] = useState(firstVisit);
+  useEffect(() => onStartTour(() => setTouring(true)), []);
   const [howOpen, setHowOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
@@ -120,8 +127,11 @@ function Shell() {
   }, []);
 
   useEffect(() => {
-    if (changelog.unseen) setLogOpen(true);
-  }, [changelog.unseen]);
+    if (!changelog.unseen) return;
+    if (firstVisit) changelog.markSeen();
+    else setLogOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [changelog.unseen, firstVisit]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -160,7 +170,7 @@ function Shell() {
     <Menu
       width="w-72"
       trigger={(open, toggle) => (
-        <Button variant="outline" onClick={toggle} aria-label="Data" aria-expanded={open} className={cx(open && "border-line-strong")}>
+        <Button variant="outline" onClick={toggle} aria-label="Data" data-tour="data" aria-expanded={open} className={cx(open && "border-line-strong")}>
           <Database size={16} /> <span className="hidden sm:inline">Data</span>
         </Button>
       )}
@@ -238,10 +248,11 @@ function Shell() {
       {/* Sidebar */}
       <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col border-r border-line bg-panel/70 px-4 py-5 backdrop-blur-xl lg:flex">
         <Brand />
-        <nav className="mt-8 grid gap-1">
+        <nav className="mt-8 grid gap-1" data-tour="nav">
           {NAV.map((n, i) => (
             <button
               key={n.id}
+              data-tour={`nav-${n.id}`}
               onClick={() => setView(n.id)}
               className={cx(
                 "group flex h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-body font-medium transition",
@@ -273,9 +284,12 @@ function Shell() {
 
         <WhatIfToggle whatIf={whatIf} setWhatIf={setWhatIf} className="mt-3" />
 
-        <div className="mt-auto grid gap-1 text-body-sm">
+        <div className="mt-auto grid gap-1 text-body-sm" data-tour="help">
           <SideLink icon={<CircleHelp size={16} />} onClick={() => setHowOpen(true)}>
             How it works
+          </SideLink>
+          <SideLink icon={<Compass size={16} />} onClick={startTour}>
+            Guided tour
           </SideLink>
           <SideLink icon={<Gift size={16} />} onClick={() => setLogOpen(true)} dot={changelog.unseen}>
             What's new
@@ -301,7 +315,7 @@ function Shell() {
           </div>
           <div className="flex-1 lg:hidden" />
           <FileBackupIndicator backup={fileBackup} onOpen={() => setFileBackupOpen(true)} />
-          <div className="flex items-center">
+          <div className="flex items-center" data-tour="undo">
             <IconButton label="Undo (Ctrl/Cmd+Z)" onClick={undo} disabled={!undoCount} className="disabled:pointer-events-none disabled:opacity-30">
               <Undo2 size={17} />
             </IconButton>
@@ -310,7 +324,7 @@ function Shell() {
             </IconButton>
           </div>
           {dataMenu}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block" data-tour="add">
             <Button variant="primary" onClick={() => openAdd()}>
               <Plus size={17} /> Add course
               <kbd className="num ml-1 rounded-md border border-current/40 px-1.5 text-micro font-medium">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd>
@@ -404,7 +418,7 @@ function Shell() {
         )}
 
         <Suspense fallback={<div className="py-20 text-center text-body-sm text-faint">Loading…</div>}>
-        <div key={view} className="rise">
+        <div key={view} className="rise" data-tour="view">
           {view === "overview" && <Overview onBackup={data.quickBackup} onImport={data.importCsv} />}
           {view === "courses" && <Courses />}
           {view === "timeline" && <Timeline />}
@@ -418,22 +432,24 @@ function Shell() {
       </main>
 
       {/* Mobile bottom navigation */}
-      <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+      <nav data-tour="nav" className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2">
           {NAV.slice(0, 2).map((n) => (
-            <NavTab key={n.id} item={n} active={view === n.id} onClick={() => setView(n.id)} />
+            <NavTab key={n.id} item={n} tour={`nav-${n.id}`} active={view === n.id} onClick={() => setView(n.id)} />
           ))}
           <div className="flex justify-center">
             <button
               onClick={() => openAdd()}
               aria-label="Add course"
+              data-tour="add"
               className="-mt-7 flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl bg-accent text-white shadow-[0_10px_24px_-8px_var(--accent)] transition active:scale-95 dark:text-paper"
             >
               <Plus size={24} />
             </button>
           </div>
-          <NavTab item={NAV.find((n) => n.id === "planner")!} active={view === "planner"} onClick={() => setView("planner")} />
+          <NavTab item={NAV.find((n) => n.id === "planner")!} tour="nav-planner" active={view === "planner"} onClick={() => setView("planner")} />
           <NavTab
+            tour="nav-more"
             item={{ id: "overview", label: "More", icon: <MenuIcon size={18} />, blurb: "" }}
             active={moreOpen || ["timeline", "catalog", "checklist"].includes(view)}
             onClick={() => setMoreOpen(true)}
@@ -469,6 +485,15 @@ function Shell() {
             }}
           >
             How it works
+          </SideLink>
+          <SideLink
+            icon={<Compass size={17} />}
+            onClick={() => {
+              setMoreOpen(false);
+              startTour();
+            }}
+          >
+            Guided tour
           </SideLink>
           <SideLink
             icon={<Gift size={17} />}
@@ -516,6 +541,7 @@ function Shell() {
       <Suspense fallback={null}>
         {assistantReady && <Assistant />}
         {studipOpen && <StudipSync open onClose={() => setStudipOpen(false)} />}
+        {touring && <Tour onClose={() => setTouring(false)} />}
       </Suspense>
     </div>
   );
@@ -543,10 +569,11 @@ function SideLink({ icon, children, onClick, dot }: { icon: ReactNode; children:
   );
 }
 
-function NavTab({ item, active, onClick }: { item: (typeof NAV)[number]; active: boolean; onClick: () => void }) {
+function NavTab({ item, active, onClick, tour }: { item: (typeof NAV)[number]; active: boolean; onClick: () => void; tour?: string }) {
   return (
     <button
       onClick={onClick}
+      data-tour={tour}
       className={cx("flex h-full cursor-pointer flex-col items-center justify-center gap-1 text-micro font-medium transition", active ? "text-accent" : "text-muted")}
     >
       <span className={cx("flex h-7 w-12 items-center justify-center rounded-full transition", active && "bg-accent-soft")}>{item.icon}</span>
@@ -568,6 +595,7 @@ function WhatIfToggle({ whatIf, setWhatIf, className, compact }: { whatIf: boole
         role="switch"
         aria-checked={whatIf}
         aria-label="What-if mode: simulate courses and grades"
+        data-tour="whatif"
         className={cx(
           "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full border pr-1.5 pl-3 text-meta font-medium transition",
           whatIf ? "border-warn/60 bg-warn-soft text-warn" : "border-line bg-panel text-muted",
@@ -580,6 +608,7 @@ function WhatIfToggle({ whatIf, setWhatIf, className, compact }: { whatIf: boole
   return (
     <button
       onClick={() => setWhatIf(!whatIf)}
+      data-tour="whatif"
       className={cx(
         "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left text-body-sm transition",
         whatIf ? "border-warn/60 bg-warn-soft text-warn" : "border-line bg-panel text-muted hover:text-ink",
