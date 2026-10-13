@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { migrateCourseNames, useCatalog } from "./lib/catalog";
 import { computeStats, type Stats } from "./lib/stats";
+import { PALETTE_KEY, applyPalette, loadPalette } from "./lib/palettes";
 import { loadState, readFlag, saveState, writeFlag } from "./lib/storage";
 import type { Catalog } from "./lib/catalog";
 import type { Course, TrackerState } from "./lib/types";
@@ -41,6 +42,8 @@ interface TrackerCtx {
   setMoveTarget: (c: Course | null) => void;
   whatIf: boolean;
   setWhatIf: (v: boolean) => void;
+  palette: string;
+  setPalette: (id: string) => void;
   view: View;
   setView: (v: View) => void;
   toasts: Toast[];
@@ -82,6 +85,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     return { ...s, usageCount: (s.usageCount || 0) + 1 };
   });
   const [whatIf, setWhatIfRaw] = useState(false);
+  const [palette, setPaletteRaw] = useState(loadPalette);
   const [view, setViewRaw] = useState<View>(() => (readFlag(VIEW_KEY) as View) || "overview");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
@@ -115,11 +119,20 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     });
   }, [catalog]);
 
+  // Theme (light/dark) is part of the shared state; the palette is a separate,
+  // new-UI-only setting so the classic UI's saved format stays untouched.
   useEffect(() => {
     document.documentElement.classList.toggle("dark", state.theme === "dark");
+    applyPalette(palette);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", state.theme === "dark" ? "#13161d" : "#f6f3ec");
-  }, [state.theme]);
+    const paper = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim();
+    if (meta && paper) meta.setAttribute("content", paper);
+  }, [state.theme, palette]);
+
+  const setPalette = useCallback((id: string) => {
+    setPaletteRaw(id);
+    writeFlag(PALETTE_KEY, id);
+  }, []);
 
   const syncCounts = () => {
     setUndoCount(undoStack.current.length);
@@ -248,6 +261,8 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     setMoveTarget,
     whatIf,
     setWhatIf,
+    palette,
+    setPalette,
     view,
     setView,
     toasts,

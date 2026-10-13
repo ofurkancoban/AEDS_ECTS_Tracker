@@ -21,7 +21,7 @@ Tracking ECTS credits across five categories, dozens of elective options, German
 
 - A dashboard with five views: Overview (progress ring, GPA, target GPA, semester load, countdown, alerts, per-category cards and charts), Courses (grouped by requirement), Timeline (one column per semester, drag cards to reschedule), Planner (next-semester options and the graduation path) and Checklist
 - A command palette for adding courses (Ctrl/Cmd + K): search the whole catalog by code, title or lecturer, then pick the category, semester, status and grade in one step
-- Sidebar navigation on desktop, a bottom tab bar with a central add button on mobile, light and dark themes, keyboard shortcuts (1-6 to switch views)
+- Sidebar navigation on desktop, a bottom tab bar with a central add button on mobile, an Appearance setting with six colour palettes (each in light and dark, all checked for WCAG AA text contrast), keyboard shortcuts (1-6 to switch views)
 - A Catalog view to browse every module with search (code, title, lecturer, exam type, learning outcomes), filters (category, language, offering term, open this semester, compulsory, hide taken) and sorting by difficulty or recency
 - A grade simulator in the Planner: pick an expected grade for every open course (and an average for unplanned credits) to see the projected final GPA against your target
 - Touch support on phones: long-press a card to drag it, or tap it to move it to another semester, change its status, grade or category

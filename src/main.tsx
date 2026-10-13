@@ -3,19 +3,22 @@ import "@fontsource-variable/inter";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/600.css";
 import "./styles.css";
+import "./palettes.css";
 
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { loadCatalog } from "./lib/catalog";
+import { applyPalette, loadPalette } from "./lib/palettes";
 import { installTouchDrag } from "./lib/touchDrag";
 
-// Apply the saved theme before first paint to avoid a light flash.
+// Apply the saved theme and palette before first paint to avoid a light flash.
 try {
   const saved = JSON.parse(localStorage.getItem("ects-tracker-state") || "{}");
   if (saved.theme === "dark") document.documentElement.classList.add("dark");
 } catch {
   /* ignore */
 }
+applyPalette(loadPalette());
 
 createRoot(document.getElementById("root")!).render(<App />);
 

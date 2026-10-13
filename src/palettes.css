@@ -1,0 +1,228 @@
+/* Extra colour palettes. Each sets the same tokens as the default (Classic)
+   palette in styles.css; data-palette on <html> picks one, .dark its night mode.
+   Generated from the list in src/lib/palettes.ts, keep both in sync. */
+
+/* Ocean */
+[data-palette="ocean"] {
+  --ink: #13233a;
+  --paper: #f2f5f9;
+  --panel: #ffffff;
+  --panel-2: #f7f9fc;
+  --accent: #2457a6;
+  --accent-soft: #e3ecf8;
+  --warn: #a15425;
+  --warn-soft: #f8e8dc;
+  --line: #dfe5ee;
+  --line-strong: #c9d3e0;
+  --muted: #5d6b7d;
+  --faint: #8c98a8;
+  --cat-economics: #2457a6;
+  --cat-empirical: #2f8f8b;
+  --cat-datascience: #b0821c;
+  --cat-specialization: #8a4f9a;
+  --cat-thesis: #13233a;
+  --cat-further: #5b7f57;
+  --cat-additional: #8592a3;
+}
+
+[data-palette="ocean"].dark {
+  --ink: #e6ecf3;
+  --paper: #0e141e;
+  --panel: #151d29;
+  --panel-2: #1a2331;
+  --accent: #6ea2f0;
+  --accent-soft: #1a2b45;
+  --warn: #e8995e;
+  --warn-soft: #3a2a1e;
+  --line: #243043;
+  --line-strong: #324159;
+  --muted: #95a3b6;
+  --faint: #67768a;
+  --cat-economics: #6ea2f0;
+  --cat-empirical: #5cc4bf;
+  --cat-datascience: #e0b453;
+  --cat-specialization: #c08fd0;
+  --cat-thesis: #e6ecf3;
+  --cat-further: #93ba8e;
+  --cat-additional: #98a3b3;
+}
+
+/* Forest */
+[data-palette="forest"] {
+  --ink: #1e2a22;
+  --paper: #f3f4ee;
+  --panel: #ffffff;
+  --panel-2: #f8f9f4;
+  --accent: #3f6b3a;
+  --accent-soft: #e4ede0;
+  --warn: #925c22;
+  --warn-soft: #f5eadb;
+  --line: #dfe3d6;
+  --line-strong: #cbd1bf;
+  --muted: #626b5e;
+  --faint: #959c8f;
+  --cat-economics: #3f6b3a;
+  --cat-empirical: #3f5c8c;
+  --cat-datascience: #b0821c;
+  --cat-specialization: #8a4f7e;
+  --cat-thesis: #1e2a22;
+  --cat-further: #2f7f7a;
+  --cat-additional: #8b9085;
+}
+
+[data-palette="forest"].dark {
+  --ink: #e7ebe2;
+  --paper: #111611;
+  --panel: #192019;
+  --panel-2: #1e261e;
+  --accent: #8cc07f;
+  --accent-soft: #22331f;
+  --warn: #e0a160;
+  --warn-soft: #3a2c1c;
+  --line: #29332a;
+  --line-strong: #374437;
+  --muted: #9da898;
+  --faint: #6c776a;
+  --cat-economics: #8cc07f;
+  --cat-empirical: #7d9bd1;
+  --cat-datascience: #d8ab4c;
+  --cat-specialization: #c48fb8;
+  --cat-thesis: #e7ebe2;
+  --cat-further: #6cc0ba;
+  --cat-additional: #a2a99c;
+}
+
+/* Plum */
+[data-palette="plum"] {
+  --ink: #2a1f2d;
+  --paper: #f7f3f4;
+  --panel: #ffffff;
+  --panel-2: #fbf8f9;
+  --accent: #7a3e6e;
+  --accent-soft: #f1e4ee;
+  --warn: #9d5727;
+  --warn-soft: #f6e9df;
+  --line: #e8dde3;
+  --line-strong: #d7c7d0;
+  --muted: #6e6070;
+  --faint: #9e90a0;
+  --cat-economics: #7a3e6e;
+  --cat-empirical: #3f5c8c;
+  --cat-datascience: #a87b1e;
+  --cat-specialization: #2f6f6d;
+  --cat-thesis: #2a1f2d;
+  --cat-further: #5e7a5a;
+  --cat-additional: #8f8590;
+}
+
+[data-palette="plum"].dark {
+  --ink: #efe6ee;
+  --paper: #161118;
+  --panel: #1f1822;
+  --panel-2: #251d29;
+  --accent: #d08cc2;
+  --accent-soft: #3a2537;
+  --warn: #e29a5d;
+  --warn-soft: #3a2a1d;
+  --line: #32283a;
+  --line-strong: #433648;
+  --muted: #a898a8;
+  --faint: #75677a;
+  --cat-economics: #d08cc2;
+  --cat-empirical: #7d9bd1;
+  --cat-datascience: #d8ab4c;
+  --cat-specialization: #5ab6b2;
+  --cat-thesis: #efe6ee;
+  --cat-further: #93b38e;
+  --cat-additional: #a99ea9;
+}
+
+/* Sunset */
+[data-palette="sunset"] {
+  --ink: #2b201a;
+  --paper: #faf5ef;
+  --panel: #ffffff;
+  --panel-2: #fdf9f4;
+  --accent: #aa4929;
+  --accent-soft: #f8e5dc;
+  --warn: #916010;
+  --warn-soft: #f5ecd8;
+  --line: #ece2d5;
+  --line-strong: #dccdbb;
+  --muted: #74655a;
+  --faint: #a69688;
+  --cat-economics: #aa4929;
+  --cat-empirical: #3f5c8c;
+  --cat-datascience: #916010;
+  --cat-specialization: #7a4a7e;
+  --cat-thesis: #2b201a;
+  --cat-further: #4f7a5a;
+  --cat-additional: #958a80;
+}
+
+[data-palette="sunset"].dark {
+  --ink: #f2e9e1;
+  --paper: #191310;
+  --panel: #221a16;
+  --panel-2: #29201b;
+  --accent: #f08a62;
+  --accent-soft: #3d241a;
+  --warn: #e3b054;
+  --warn-soft: #3a2e18;
+  --line: #382c25;
+  --line-strong: #4a3a31;
+  --muted: #ac9c90;
+  --faint: #7a6b60;
+  --cat-economics: #f08a62;
+  --cat-empirical: #7d9bd1;
+  --cat-datascience: #e3b054;
+  --cat-specialization: #b98bbd;
+  --cat-thesis: #f2e9e1;
+  --cat-further: #93b38e;
+  --cat-additional: #a8998e;
+}
+
+/* Graphite */
+[data-palette="graphite"] {
+  --ink: #18181b;
+  --paper: #f4f4f3;
+  --panel: #ffffff;
+  --panel-2: #fafaf9;
+  --accent: #4f46e5;
+  --accent-soft: #e8e7fd;
+  --warn: #bc3f0b;
+  --warn-soft: #fbe9df;
+  --line: #e4e4e7;
+  --line-strong: #d4d4d8;
+  --muted: #63636b;
+  --faint: #9a9aa2;
+  --cat-economics: #4f46e5;
+  --cat-empirical: #0e7490;
+  --cat-datascience: #b45309;
+  --cat-specialization: #9333ea;
+  --cat-thesis: #18181b;
+  --cat-further: #15803d;
+  --cat-additional: #8a8a93;
+}
+
+[data-palette="graphite"].dark {
+  --ink: #ededef;
+  --paper: #0d0d10;
+  --panel: #16161a;
+  --panel-2: #1c1c21;
+  --accent: #8b85ff;
+  --accent-soft: #24224a;
+  --warn: #f59e5b;
+  --warn-soft: #3a2414;
+  --line: #28282f;
+  --line-strong: #393941;
+  --muted: #a1a1aa;
+  --faint: #6e6e78;
+  --cat-economics: #8b85ff;
+  --cat-empirical: #4fc3dc;
+  --cat-datascience: #f2b04b;
+  --cat-specialization: #c084fc;
+  --cat-thesis: #ededef;
+  --cat-further: #6ad08e;
+  --cat-additional: #9f9fa8;
+}

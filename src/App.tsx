@@ -14,6 +14,7 @@ import {
   Moon,
   Redo2,
   Search,
+  Palette,
   Plus,
   Printer,
   QrCode,
@@ -29,6 +30,7 @@ import {
 } from "lucide-react";
 import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { AddCourseDialog } from "./components/AddCourse";
+import { AppearanceModal } from "./components/Appearance";
 import { MoveSheet } from "./components/MoveSheet";
 import { ChangelogModal, HowItWorksModal, ShareModal, useChangelog, useDataActions, useQrImport } from "./components/DataActions";
 import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, Toasts, cx } from "./components/ui";
@@ -76,6 +78,7 @@ function Shell() {
   const changelog = useChangelog();
   const [howOpen, setHowOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [visits, setVisits] = useState<number | null>(null);
   const [installEvt, setInstallEvt] = useState<InstallPromptEvent | null>(null);
@@ -238,6 +241,9 @@ function Shell() {
           <SideLink icon={<Gift size={16} />} onClick={() => setLogOpen(true)} dot={changelog.unseen}>
             What's new
           </SideLink>
+          <SideLink icon={<Palette size={16} />} onClick={() => setAppearanceOpen(true)}>
+            Appearance
+          </SideLink>
           <SideLink icon={state.theme === "dark" ? <Sun size={16} /> : <Moon size={16} />} onClick={toggleTheme}>
             {state.theme === "dark" ? "Light mode" : "Dark mode"}
           </SideLink>
@@ -391,11 +397,21 @@ function Shell() {
           >
             What's new
           </SideLink>
+          <SideLink
+            icon={<Palette size={17} />}
+            onClick={() => {
+              setMoreOpen(false);
+              setAppearanceOpen(true);
+            }}
+          >
+            Appearance
+          </SideLink>
           <SideLink icon={state.theme === "dark" ? <Sun size={17} /> : <Moon size={17} />} onClick={toggleTheme}>
             {state.theme === "dark" ? "Light mode" : "Dark mode"}
           </SideLink>
         </div>
       </Modal>
+      <AppearanceModal open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
 
       {data.fileInputs}
       <AddCourseDialog />
