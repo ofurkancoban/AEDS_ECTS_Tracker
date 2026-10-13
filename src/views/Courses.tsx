@@ -41,7 +41,7 @@ export function Courses() {
               )}
             >
               {f === "all" ? "All" : f === "in-progress" ? "In progress" : f[0].toUpperCase() + f.slice(1)}
-              <span className="num ml-1.5 opacity-60">{counts[f]}</span>
+              <span className="num ml-1.5">{counts[f]}</span>
             </button>
           ))}
         </div>

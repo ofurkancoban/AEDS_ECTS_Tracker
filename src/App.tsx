@@ -147,7 +147,7 @@ function Shell() {
     <Menu
       width="w-72"
       trigger={(open, toggle) => (
-        <Button variant="outline" onClick={toggle} className={cx(open && "border-line-strong")}>
+        <Button variant="outline" onClick={toggle} aria-label="Data" aria-expanded={open} className={cx(open && "border-line-strong")}>
           <Database size={16} /> <span className="hidden sm:inline">Data</span>
         </Button>
       )}
@@ -279,7 +279,7 @@ function Shell() {
           <div className="hidden lg:block">
             <Button variant="primary" onClick={() => openAdd()}>
               <Plus size={17} /> Add course
-              <kbd className="num ml-1 rounded-md bg-white/15 px-1.5 text-micro font-medium">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd>
+              <kbd className="num ml-1 rounded-md border border-current/40 px-1.5 text-micro font-medium">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd>
             </Button>
           </div>
         </div>
@@ -535,7 +535,7 @@ function WhatIfToggle({ whatIf, setWhatIf, className, compact }: { whatIf: boole
       <Sparkles size={16} />
       <span className="flex-1">
         <span className="block font-medium">What-if mode</span>
-        <span className="block text-caption opacity-80">Simulate courses and grades</span>
+        <span className="block text-caption">Simulate courses and grades</span>
       </span>
       {knob}
     </button>

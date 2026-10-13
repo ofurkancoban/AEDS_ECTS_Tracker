@@ -5,6 +5,22 @@ import { categoryById } from "../lib/constants";
 import type { CategoryId, Status } from "../lib/types";
 import { useTracker } from "../state";
 
+// While any dialog is open the app behind it is inert: no keyboard focus, no
+// screen-reader access. Counted, so nested dialogs work.
+let openDialogs = 0;
+export function useInertBackground(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const root = document.getElementById("root");
+    openDialogs += 1;
+    root?.setAttribute("inert", "");
+    return () => {
+      openDialogs = Math.max(0, openDialogs - 1);
+      if (!openDialogs) root?.removeAttribute("inert");
+    };
+  }, [active]);
+}
+
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -74,6 +90,7 @@ export function Modal({
   width?: string;
 }) {
   const titleId = useId();
+  useInertBackground(open);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -207,11 +224,19 @@ export function CategoryDot({ id, size = 8 }: { id: CategoryId; size?: number })
   return <span className="inline-block shrink-0 rounded-full" style={{ width: size, height: size, background: `var(--cat-${id})` }} />;
 }
 
+// Tag text is the category colour pulled 35% toward the ink colour so the
+// small label stays at WCAG AA contrast on its tint (checked in palettes.test).
+export const TAG_TEXT_MIX = 65;
+export const TAG_BG_MIX = 12;
+
 export function CategoryTag({ id }: { id: CategoryId }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-micro font-semibold tracking-wide"
-      style={{ color: `var(--cat-${id})`, background: `color-mix(in oklab, var(--cat-${id}) 12%, transparent)` }}
+      style={{
+        color: `color-mix(in srgb, var(--cat-${id}) ${TAG_TEXT_MIX}%, var(--ink))`,
+        background: `color-mix(in srgb, var(--cat-${id}) ${TAG_BG_MIX}%, var(--panel))`,
+      }}
     >
       {categoryById(id).short}
     </span>
@@ -250,7 +275,7 @@ export function StatusPill({ status, onClick }: { status: Status; onClick?: () =
 
 export function Badge({ children, tone = "muted", title }: { children: ReactNode; tone?: "muted" | "accent" | "warn" | "danger"; title?: string }) {
   const tones = {
-    muted: "bg-ink/5 text-muted",
+    muted: "bg-ink/5 text-ink/75",
     accent: "bg-accent-soft text-accent",
     warn: "bg-warn-soft text-warn",
     danger: "bg-danger-soft text-danger",

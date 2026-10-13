@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
+import { TAG_BG_MIX, TAG_TEXT_MIX } from "../components/ui";
 import { PALETTES, PALETTE_KEY, applyPalette, loadPalette } from "./palettes";
 
 type Tokens = Record<string, string>;
@@ -80,6 +81,30 @@ describe("palettes", () => {
           expect(contrast(t["--accent"], t["--panel"])).toBeGreaterThanOrEqual(4.5);
           expect(contrast(t["--accent"], t["--accent-soft"])).toBeGreaterThanOrEqual(4.5);
           expect(contrast(t["--warn"], t["--warn-soft"])).toBeGreaterThanOrEqual(4.5);
+        });
+
+        it("keeps muted and faint text readable on every background", () => {
+          for (const bg of ["--paper", "--panel", "--panel-2"]) {
+            expect(contrast(t["--muted"], t[bg]), `muted on ${bg}`).toBeGreaterThanOrEqual(4.5);
+            expect(contrast(t["--faint"], t[bg]), `faint on ${bg}`).toBeGreaterThanOrEqual(4.5);
+          }
+        });
+
+        it("keeps category tags readable", () => {
+          const rgb = (h: string) => {
+            let x = h.replace("#", "");
+            if (x.length === 3) x = [...x].map((c) => c + c).join("");
+            return [0, 2, 4].map((i) => parseInt(x.slice(i, i + 2), 16));
+          };
+          const mix = (a: string, b: string, pct: number) => {
+            const [p, q] = [rgb(a), rgb(b)];
+            return "#" + p.map((v, i) => Math.round(v * (pct / 100) + q[i] * (1 - pct / 100)).toString(16).padStart(2, "0")).join("");
+          };
+          for (const cat of ["economics", "empirical", "datascience", "specialization", "thesis", "further", "additional"]) {
+            const c = t["--cat-" + cat];
+            expect(c, cat).toMatch(/^#/);
+            expect(contrast(mix(c, t["--ink"], TAG_TEXT_MIX), mix(c, t["--panel"], TAG_BG_MIX)), `${cat} tag`).toBeGreaterThanOrEqual(4.5);
+          }
         });
 
         it("keeps button labels readable on the accent colour", () => {

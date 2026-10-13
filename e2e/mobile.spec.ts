@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { byCode, importFixture, noHorizontalScroll, open } from "./helpers";
 
@@ -25,7 +26,7 @@ test("every view fits the phone width", async ({ page }) => {
 test("long-press drag reaches an off-screen semester by edge scrolling", async ({ page }) => {
   await page.locator("nav.fixed").getByRole("button", { name: "More" }).click();
   await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: "Timeline" }).click();
-  const card = page.locator('[role="button"][draggable="true"]', { hasText: "International Trade" });
+  const card = page.locator('[aria-label^="SoSe"] [draggable="true"], [aria-label^="WiSe"] [draggable="true"]', { hasText: "International Trade" });
   await card.scrollIntoViewIfNeeded();
   const start = (await card.boundingBox())!;
   const vw = page.viewportSize()!.width;
@@ -54,7 +55,7 @@ test("long-press drag reaches an off-screen semester by edge scrolling", async (
 test("a short tap opens the move sheet instead of dragging", async ({ page }) => {
   await page.locator("nav.fixed").getByRole("button", { name: "More" }).click();
   await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: "Timeline" }).click();
-  await page.locator('[role="button"][draggable="true"]', { hasText: "Advanced Microeconomics" }).tap();
+  await page.locator('[aria-label^="SoSe"] [draggable="true"], [aria-label^="WiSe"] [draggable="true"]', { hasText: "Advanced Microeconomics" }).tap();
   const sheet = page.getByRole("dialog", { name: "Advanced Microeconomics" });
   await expect(sheet).toBeVisible();
   await sheet.getByRole("button", { name: "In progress" }).tap();
@@ -64,7 +65,7 @@ test("a short tap opens the move sheet instead of dragging", async ({ page }) =>
 test("scrolling the timeline does not start a drag", async ({ page }) => {
   await page.locator("nav.fixed").getByRole("button", { name: "More" }).click();
   await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: "Timeline" }).click();
-  const card = page.locator('[role="button"][draggable="true"]').first();
+  const card = page.locator('[aria-label^="SoSe"] [draggable="true"], [aria-label^="WiSe"] [draggable="true"]').first();
   const box = (await card.boundingBox())!;
   const before = await byCode(page, "wir821");
   const cdp = await page.context().newCDPSession(page);
@@ -109,4 +110,24 @@ test("the page content starts near the top on a phone", async ({ page }, info) =
   await expect(page.getByRole("switch", { name: /What-if mode/ }).first()).toBeVisible();
   await page.waitForTimeout(900);
   await page.screenshot({ path: `test-results/${info.project.name}-top.png` });
+});
+
+test("no serious accessibility issues on the phone layout", async ({ page }) => {
+  const issues: string[] = [];
+  const scan = async (where: string) => {
+    const res = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    res.violations
+      .filter((v) => v.impact === "serious" || v.impact === "critical")
+      .forEach((v) => issues.push(`${where}: ${v.id} x${v.nodes.length} ${v.nodes[0]?.target.join(" ")}`));
+  };
+  await page.waitForTimeout(500);
+  await scan("overview");
+  await page.locator("nav.fixed").getByRole("button", { name: "More" }).click();
+  await page.waitForTimeout(300);
+  await scan("more sheet");
+  await page.keyboard.press("Escape");
+  await page.locator("nav.fixed").getByRole("button", { name: "Add course" }).click();
+  await page.waitForTimeout(300);
+  await scan("add palette");
+  expect(issues, issues.join("\n")).toEqual([]);
 });

@@ -76,7 +76,7 @@ test("drags a course to Specialization and back", async ({ page }) => {
 
 test("reschedules on the timeline by dragging", async ({ page }) => {
   await page.keyboard.press("3");
-  const card = page.locator('[role="button"][draggable="true"]', { hasText: "Advanced Microeconomics" });
+  const card = page.locator('[aria-label^="SoSe"] [draggable="true"], [aria-label^="WiSe"] [draggable="true"]', { hasText: "Advanced Microeconomics" });
   const target = page.locator("section", { has: page.locator("h3", { hasText: /^SoSe27$/ }) });
   await card.dragTo(target);
   await expect.poll(async () => (await byCode(page, "wir874"))?.semester).toBe("SoSe27");

@@ -81,12 +81,12 @@ export function Timeline() {
               className={cx(
                 "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-meta transition",
                 s === cur ? "border-accent bg-accent text-white dark:text-paper" : "border-line bg-panel hover:border-line-strong",
-                pastCollapsed && past.includes(s) && "opacity-50",
+                pastCollapsed && past.includes(s) && "border-dashed text-muted",
               )}
             >
               <span className="font-semibold">{s}</span>
               {s !== "Unscheduled" && (
-                <span className={cx("num", s === cur ? "opacity-80" : e > MAX_ECTS_PER_SEMESTER ? "text-warn" : "text-muted")}>{e}</span>
+                <span className={cx("num", s === cur ? "" : e > MAX_ECTS_PER_SEMESTER ? "text-warn" : "text-muted")}>{e}</span>
               )}
             </button>
           );
@@ -206,9 +206,6 @@ function Card({ course }: { course: Course }) {
       draggable={!course.hypothetical}
       onDragStart={(e) => startCourseDrag(e, course)}
       onClick={() => setMoveTarget(course)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && setMoveTarget(course)}
       title="Tap to move or edit. Drag (or long-press on touch) to another semester."
       className={cx(
         "density-card relative cursor-grab overflow-hidden rounded-2xl border bg-panel p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-line-strong active:cursor-grabbing",
@@ -222,7 +219,18 @@ function Card({ course }: { course: Course }) {
         <span className="num font-semibold">{rest.length ? code : ""}</span>
         <span className="num ml-auto">{course.ects} ECTS</span>
       </div>
-      <div className="mt-1 line-clamp-2 text-body-sm leading-snug font-medium">{title}</div>
+      {/* The title is the card's keyboard entry point (the card itself handles taps). */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setMoveTarget(course);
+        }}
+        aria-label={`Move or edit ${course.name}`}
+        className="mt-1 line-clamp-2 block w-full cursor-pointer rounded-md text-left text-body-sm leading-snug font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+      >
+        {title}
+      </button>
       <div className="mt-2 flex items-center justify-between">
         <span onClick={(e) => e.stopPropagation()}>
           <StatusPill

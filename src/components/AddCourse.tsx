@@ -17,7 +17,7 @@ import { difficultyLabel, useRatings } from "../lib/ratings";
 import { allSemesters, planningSemester } from "../lib/semesters";
 import type { CategoryId, Status } from "../lib/types";
 import { useTracker } from "../state";
-import { Badge, Button, CategoryDot, CategoryTag, cx } from "./ui";
+import { Badge, Button, CategoryDot, CategoryTag, cx, useInertBackground } from "./ui";
 
 interface Entry {
   label: string;
@@ -53,6 +53,7 @@ function Palette({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const plan = planningSemester();
+  useInertBackground(true);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

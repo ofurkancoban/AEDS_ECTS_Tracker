@@ -66,6 +66,15 @@ export default function Assistant() {
   const [sending, setSending] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  // Closed: not just transparent but unreachable by keyboard and screen readers
+  // (React 18 has no `inert` prop, so set the attribute directly).
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    if (open) el.removeAttribute("inert");
+    else el.setAttribute("inert", "");
+  }, [open]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mobile = useIsMobile();
   const vv = useVisualViewport(open && mobile);
@@ -147,13 +156,14 @@ export default function Assistant() {
         role="dialog"
         aria-label="AEDS AI Assistant"
         aria-hidden={!open}
+        ref={panelRef}
         style={mobile && vv ? { top: vv.top, height: vv.height } : undefined}
         className={cx(
           "no-print fixed z-[9500] flex flex-col overflow-hidden border-line bg-panel shadow-[var(--shadow-lg)] transition-[opacity,transform] duration-200",
           mobile
             ? "inset-x-0 top-0 h-[100dvh] border-0"
             : "right-5 bottom-[calc(var(--aeds-bubble-bottom)+72px)] h-[560px] max-h-[calc(100vh-120px)] w-[380px] origin-bottom-right rounded-3xl border",
-          open ? "opacity-100" : "pointer-events-none translate-y-2 opacity-0",
+          open ? "opacity-100" : "pointer-events-none invisible translate-y-2 opacity-0",
         )}
       >
         <header className="flex shrink-0 items-center gap-2 bg-accent px-4 pt-[calc(12px+env(safe-area-inset-top))] pb-3 text-white sm:pt-3 dark:text-paper">
