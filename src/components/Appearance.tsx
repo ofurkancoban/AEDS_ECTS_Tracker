@@ -1,22 +1,27 @@
 import { Check, Moon, Rows3, Rows4, Sun } from "lucide-react";
+import { useRef } from "react";
 import { PALETTES, type Palette } from "../lib/palettes";
 import { useTracker } from "../state";
-import { Modal, cx } from "./ui";
+import { Modal, SlidingPill, cx } from "./ui";
 
 export function AppearanceModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { state, patch, palette, setPalette, density, setDensity } = useTracker();
   const mode = state.theme;
+  const modeGroup = useRef<HTMLDivElement>(null);
+  const densityGroup = useRef<HTMLDivElement>(null);
   return (
     <Modal open={open} onClose={onClose} title="Appearance" subtitle="Saved on this device. Your course data is not affected." width="max-w-2xl">
       <div className="eyebrow mb-2">Mode</div>
-      <div className="mb-5 flex w-full max-w-xs rounded-xl border border-line p-1">
+      <div ref={modeGroup} className="relative mb-5 flex w-full rounded-xl border border-line p-1">
+        <SlidingPill group={modeGroup} active={mode} className="rounded-lg bg-ink" />
         {(["light", "dark"] as const).map((m) => (
           <button
             key={m}
             onClick={() => patch({ theme: m })}
+            data-active={mode === m}
             className={cx(
-              "inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg text-body-sm font-medium transition",
-              mode === m ? "bg-ink text-paper" : "text-muted hover:text-ink",
+              "relative inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg text-body-sm font-medium transition-colors",
+              mode === m ? "text-paper" : "text-muted hover:text-ink",
             )}
           >
             {m === "light" ? <Sun size={15} /> : <Moon size={15} />}
@@ -26,16 +31,18 @@ export function AppearanceModal({ open, onClose }: { open: boolean; onClose: () 
       </div>
 
       <div className="eyebrow mb-2">Density</div>
-      <div className="mb-5 flex w-full max-w-xs rounded-xl border border-line p-1" role="radiogroup" aria-label="Density">
+      <div ref={densityGroup} className="relative mb-5 flex w-full rounded-xl border border-line p-1" role="radiogroup" aria-label="Density">
+        <SlidingPill group={densityGroup} active={density} className="rounded-lg bg-ink" />
         {(["comfortable", "compact"] as const).map((d) => (
           <button
             key={d}
             role="radio"
             aria-checked={density === d}
             onClick={() => setDensity(d)}
+            data-active={density === d}
             className={cx(
-              "inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg text-body-sm font-medium transition",
-              density === d ? "bg-ink text-paper" : "text-muted hover:text-ink",
+              "relative inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg text-body-sm font-medium transition-colors",
+              density === d ? "text-paper" : "text-muted hover:text-ink",
             )}
           >
             {d === "comfortable" ? <Rows3 size={15} /> : <Rows4 size={15} />}
