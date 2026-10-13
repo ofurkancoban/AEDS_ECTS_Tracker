@@ -26,6 +26,8 @@ export interface ChatMessage {
   stage?: string;
   /** The connection dropped before the answer was complete. */
   interrupted?: boolean;
+  /** The reader stopped the answer. */
+  stopped?: boolean;
 }
 
 const K = {
@@ -100,6 +102,16 @@ export const STAGE_LABELS: Record<string, string> = {
 export interface StreamHandlers {
   onStage?: (stage: string) => void;
   onToken?: (text: string) => void;
+  /** Aborting it stops the answer (the server then stops generating too). */
+  signal?: AbortSignal;
+}
+
+/** Thrown when the reader stopped the answer; carries what had arrived. */
+export class StreamStopped extends Error {
+  constructor(public partial: string) {
+    super("Stopped.");
+    this.name = "StreamStopped";
+  }
 }
 
 /** Thrown when the stream breaks after part of the answer arrived. */
@@ -136,16 +148,30 @@ export function parseSse(buffer: string): { events: { event: string; data: strin
 
 /**
  * Asks via /chat/stream, reporting stages and tokens as they arrive, and
- * resolves with the same shape as postChat. Falls back to /chat when the
- * server has no streaming endpoint.
+ * resolves with the same shape as postChat as soon as the 'done' event
+ * arrives. The server keeps the stream open a little longer for its
+ * contribution check; that rest is read in the background so the answer's
+ * sources don't wait for it, and so the check isn't cut short. Falls back to
+ * /chat when the server has no streaming endpoint.
  */
 export async function streamChat(message: string, handlers: StreamHandlers = {}, retried = false): Promise<ChatResponse> {
-  const token = await ensureToken();
-  const r = await fetch(AEDS_RAG_BASE + "/chat/stream", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, Accept: "text/event-stream" },
-    body: JSON.stringify({ message, thread_id: loadThreadId() }),
-  });
+  const { signal } = handlers;
+  let partial = "";
+  const stopped = () => new StreamStopped(partial);
+  if (signal?.aborted) throw stopped();
+  let r: Response;
+  try {
+    const token = await ensureToken();
+    r = await fetch(AEDS_RAG_BASE + "/chat/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, Accept: "text/event-stream" },
+      body: JSON.stringify({ message, thread_id: loadThreadId() }),
+      signal,
+    });
+  } catch (err) {
+    if (signal?.aborted) throw stopped();
+    throw err;
+  }
   if (r.status === 401 && !retried) {
     set(K.token, null);
     return streamChat(message, handlers, true);
@@ -158,44 +184,61 @@ export async function streamChat(message: string, handlers: StreamHandlers = {},
 
   const reader = r.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = "";
-  let partial = "";
-  let done: ChatResponse | null = null;
-  try {
-    for (;;) {
-      const { value, done: finished } = await reader.read();
-      buffer += finished ? decoder.decode() : decoder.decode(value, { stream: true });
-      const parsed = parseSse(finished ? buffer + "\n\n" : buffer);
-      buffer = parsed.rest;
-      for (const ev of parsed.events) {
-        let data: Record<string, unknown>;
-        try {
-          data = JSON.parse(ev.data);
-        } catch {
-          continue;
-        }
-        if (ev.event === "stage" && typeof data.stage === "string") handlers.onStage?.(data.stage);
-        else if (ev.event === "token" && typeof data.text === "string") {
-          partial += data.text;
-          handlers.onToken?.(data.text);
-        } else if (ev.event === "done") {
-          done = {
-            answer: String(data.final_answer ?? data.answer ?? partial),
-            thread_id: String(data.thread_id || ""),
-            sources: (data.sources as ChatResponse["sources"]) || [],
-            retrieval: (data.retrieval as ChatResponse["retrieval"]) || [],
-            query_log_id: (data.query_log_id as ChatResponse["query_log_id"]) ?? null,
-          };
-          if (done.thread_id) set(K.thread, done.thread_id);
-        }
+  return new Promise<ChatResponse>((resolve, reject) => {
+    let settled = false;
+    const settle = (f: () => void) => {
+      if (!settled) {
+        settled = true;
+        f();
       }
-      if (finished) break;
-    }
-  } catch {
-    if (!done) throw new StreamInterrupted(partial);
-  }
-  if (!done) throw new StreamInterrupted(partial);
-  return done;
+    };
+    const onAbort = () => {
+      settle(() => reject(stopped()));
+      reader.cancel().catch(() => {});
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    (async () => {
+      let buffer = "";
+      try {
+        for (;;) {
+          const { value, done: finished } = await reader.read();
+          buffer += finished ? decoder.decode() : decoder.decode(value, { stream: true });
+          const parsed = parseSse(finished ? buffer + "\n\n" : buffer);
+          buffer = parsed.rest;
+          for (const ev of parsed.events) {
+            if (settled) continue; // only draining now
+            let data: Record<string, unknown>;
+            try {
+              data = JSON.parse(ev.data);
+            } catch {
+              continue;
+            }
+            if (ev.event === "stage" && typeof data.stage === "string") handlers.onStage?.(data.stage);
+            else if (ev.event === "token" && typeof data.text === "string") {
+              partial += data.text;
+              handlers.onToken?.(data.text);
+            } else if (ev.event === "done") {
+              const res: ChatResponse = {
+                answer: String(data.final_answer ?? data.answer ?? partial),
+                thread_id: String(data.thread_id || ""),
+                sources: (data.sources as ChatResponse["sources"]) || [],
+                retrieval: (data.retrieval as ChatResponse["retrieval"]) || [],
+                query_log_id: (data.query_log_id as ChatResponse["query_log_id"]) ?? null,
+              };
+              if (res.thread_id) set(K.thread, res.thread_id);
+              settle(() => resolve(res));
+            }
+          }
+          if (finished) break;
+        }
+      } catch {
+        // Reported below: a drop before 'done' is an interruption; after it, nothing is lost.
+      }
+      signal?.removeEventListener("abort", onAbort);
+      settle(() => reject(signal?.aborted ? stopped() : new StreamInterrupted(partial)));
+    })();
+  });
 }
 
 export async function postChat(message: string, retried = false): Promise<ChatResponse> {
@@ -354,7 +397,35 @@ export function closeOpenBold(text: string): string {
   return (last.match(/\*\*/g) || []).length % 2 ? text + "**" : text;
 }
 
-export function formatAnswer(text: string): string {
+/**
+ * Wraps module codes (wir895, inf530) that `isCode` knows in a chip the chat
+ * opens. Only text outside tags is touched, and never inside links, buttons
+ * or code spans.
+ */
+export function linkCourseCodes(html: string, isCode: (code: string) => boolean): string {
+  let skip = 0;
+  return html
+    .split(/(<[^>]+>)/)
+    .map((part) => {
+      if (part.startsWith("<")) {
+        if (/^<(a|button)[\s>]/i.test(part)) skip++;
+        else if (/^<\/(a|button)>/i.test(part)) skip = Math.max(0, skip - 1);
+        return part;
+      }
+      if (skip) return part;
+      return part.replace(/\b([A-Za-z]{2,5}\d{2,4})\b/g, (m: string, code: string) =>
+        isCode(code.toLowerCase()) ? `<button type="button" class="code-chip" data-code="${code.toLowerCase()}" aria-label="Module ${code}">${m}</button>` : m,
+      );
+    })
+    .join("");
+}
+
+export function formatAnswer(text: string, isCode?: (code: string) => boolean): string {
+  const html = formatMarkdown(text);
+  return isCode ? linkCourseCodes(html, isCode) : html;
+}
+
+function formatMarkdown(text: string): string {
   const lines = (text || "").replace(/\r\n/g, "\n").split("\n");
   const isTableSep = (l: string) => /^\s*\|?[\s:|-]+\|?\s*$/.test(l) && l.includes("-");
   const splitRow = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());

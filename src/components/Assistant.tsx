@@ -1,5 +1,5 @@
-import { ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, MessageCircle, RotateCw, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, MessageCircle, Plus, RotateCw, Search, Square, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AEDS_RAG_WEB,
@@ -7,6 +7,7 @@ import {
   STAGE_LABELS,
   SUGGESTIONS,
   StreamInterrupted,
+  StreamStopped,
   buildCourseContext,
   clearConversation,
   closeOpenBold,
@@ -22,7 +23,12 @@ import {
   withContext,
   type ChatMessage,
 } from "../lib/assistant";
+import { catalogCourse, codeOf, offeringPattern, resolveCode, type Catalog } from "../lib/catalog";
+import { focusCatalog } from "../lib/catalogFocus";
 import { citation, groupSources, stripCitations } from "../lib/citations";
+import { CATEGORIES } from "../lib/constants";
+import { followUps } from "../lib/followUps";
+import type { Course } from "../lib/types";
 import { useTracker } from "../state";
 import { cx } from "./ui";
 
@@ -61,12 +67,14 @@ function useVisualViewport(active: boolean) {
 }
 
 export default function Assistant() {
-  const { courses, state } = useTracker();
+  const { courses, state, catalog, openAdd, setView } = useTracker();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(loadMessages);
   const [include, setInclude] = useState(loadIncludeCourses);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
   const [confirmClear, setConfirmClear] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -120,6 +128,8 @@ export default function Assistant() {
     setMessages((all) => (all.length && all[all.length - 1].streaming ? [...all.slice(0, -1), f(all[all.length - 1])] : all));
 
   const ask = async (text: string) => {
+    const controller = new AbortController();
+    abortRef.current = controller;
     setSending(true);
     stick.current = true;
     setMessages((m) => [...m, { role: "assistant", text: "", streaming: true, stage: "understanding" }]);
@@ -135,6 +145,7 @@ export default function Assistant() {
     };
     try {
       const res = await streamChat(message, {
+        signal: controller.signal,
         onStage: (stage) => patchLast((m) => ({ ...m, stage })),
         onToken: (t) => {
           pending += t;
@@ -146,7 +157,12 @@ export default function Assistant() {
       patchLast(() => ({ role: "assistant", text: res.answer, sources: res.sources || [], retrieval: compactPassages(res.retrieval), queryLogId: res.query_log_id || null }));
     } catch (err) {
       cancelAnimationFrame(frame);
-      if (err instanceof StreamInterrupted && err.partial.trim()) {
+      if (err instanceof StreamStopped) {
+        // Whatever had arrived stays, marked as stopped; nothing arrived: just the note.
+        const partial = err.partial;
+        if (partial.trim()) patchLast(() => ({ role: "assistant", text: partial, stopped: true }));
+        else setMessages((all) => [...all.filter((m) => !m.streaming), { role: "system", text: "Stopped." }]);
+      } else if (err instanceof StreamInterrupted && err.partial.trim()) {
         patchLast(() => ({ role: "assistant", text: err.partial, interrupted: true }));
       } else {
         setMessages((all) => [
@@ -155,9 +171,12 @@ export default function Assistant() {
         ]);
       }
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setSending(false);
     }
   };
+
+  const stop = () => abortRef.current?.abort();
 
   const send = (raw?: string) => {
     const text = (raw ?? input).trim();
@@ -183,10 +202,34 @@ export default function Assistant() {
   };
 
   const clear = () => {
+    abortRef.current?.abort();
     clearConversation();
     setMessages([]);
     setConfirmClear(false);
   };
+
+  const isCode = useCallback((code: string) => !!catalogCourse(code, catalog), [catalog]);
+  // On a phone the chat covers the app, so step aside when sending the reader there.
+  const leave = () => mobile && setOpen(false);
+  const showModule = (code: string) => {
+    focusCatalog(code);
+    setView("catalog");
+    leave();
+  };
+  const addModule = (code: string) => {
+    const c = catalogCourse(code, catalog);
+    if (!c) return;
+    openAdd({ name: c.label, category: c.category });
+    leave();
+  };
+
+  const next = useMemo(() => {
+    const last = messages[messages.length - 1];
+    if (sending || !last || last.role !== "assistant" || last.streaming || last.interrupted || last.stopped) return [];
+    const asked = messages.filter((m) => m.role === "user").map((m) => m.text);
+    const codes = [...new Set((last.text.match(/\b[A-Za-z]{2,5}\d{2,4}\b/g) || []).map((c) => c.toLowerCase()))].filter(isCode);
+    return followUps(asked[asked.length - 1] || "", last.text, asked, codes);
+  }, [messages, sending, isCode]);
 
   const shown: (ChatMessage & { greeting?: boolean })[] = messages.length ? messages : [{ role: "assistant", text: GREETING, greeting: true }];
 
@@ -233,8 +276,24 @@ export default function Assistant() {
 
         <div ref={bodyRef} onScroll={onScroll} className="scrollbar-none flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-paper px-3.5 py-4">
           {shown.map((m, i) => (
-            <Bubble key={i} msg={m} plain={m.greeting} onRate={(r) => rate(i, r)} onRetry={sending ? undefined : () => retry(i)} />
+            <Bubble
+              key={i}
+              msg={m}
+              plain={m.greeting}
+              onRate={(r) => rate(i, r)}
+              onRetry={sending ? undefined : () => retry(i)}
+              modules={{ isCode, catalog, courses, onShow: showModule, onAdd: addModule }}
+            />
           ))}
+          {next.length > 0 && (
+            <div className="rise flex flex-col items-start gap-1.5" role="group" aria-label="Suggested follow-up questions">
+              {next.map((q) => (
+                <button key={q} onClick={() => send(q)} className="cursor-pointer rounded-full border border-accent/30 bg-panel px-3 py-1.5 text-left text-meta text-accent transition hover:border-accent hover:bg-accent-soft">
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
           {!messages.length && (
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTIONS.map((q) => (
@@ -274,14 +333,25 @@ export default function Assistant() {
               placeholder="Ask about the AEDS programme..."
               className="max-h-[100px] min-w-0 flex-1 resize-none bg-transparent py-1.5 text-title-sm leading-snug outline-none placeholder:text-faint sm:text-body"
             />
-            <button
-              onClick={() => send()}
-              disabled={sending || !input.trim()}
-              aria-label="Send message"
-              className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-white transition active:scale-90 disabled:opacity-50 dark:text-paper"
-            >
-              <ArrowUp size={17} strokeWidth={2.4} />
-            </button>
+            {sending ? (
+              <button
+                onClick={stop}
+                aria-label="Stop answer"
+                title="Stop"
+                className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-ink text-paper transition active:scale-90"
+              >
+                <Square size={12} fill="currentColor" strokeWidth={0} />
+              </button>
+            ) : (
+              <button
+                onClick={() => send()}
+                disabled={!input.trim()}
+                aria-label="Send message"
+                className="flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-accent text-white transition active:scale-90 disabled:opacity-50 dark:text-paper"
+              >
+                <ArrowUp size={17} strokeWidth={2.4} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -315,9 +385,18 @@ function RetryButton({ onRetry }: { onRetry?: () => void }) {
   );
 }
 
-function Bubble({ msg, onRate, onRetry, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) => void; onRetry?: () => void; plain?: boolean }) {
+interface Modules {
+  isCode: (code: string) => boolean;
+  catalog: Catalog;
+  courses: Course[];
+  onShow: (code: string) => void;
+  onAdd: (code: string) => void;
+}
+
+function Bubble({ msg, onRate, onRetry, plain, modules }: { msg: ChatMessage; onRate: (r: 1 | -1) => void; onRetry?: () => void; plain?: boolean; modules?: Modules }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<number | null>(null);
+  const [module, setModule] = useState<string | null>(null);
   const [showSources, setShowSources] = useState(false);
   if (msg.role === "system")
     return (
@@ -358,8 +437,16 @@ function Bubble({ msg, onRate, onRetry, plain }: { msg: ChatMessage; onRate: (r:
   const cite = active !== null ? citation(active, msg.retrieval, msg.sources) : null;
   // Citation chips are plain HTML inside the rendered answer; handle their clicks here.
   const onAnswerClick = (e: React.MouseEvent) => {
+    const codeChip = (e.target as HTMLElement).closest<HTMLElement>("[data-code]");
+    if (codeChip) {
+      const code = codeChip.dataset.code!;
+      setActive(null);
+      setModule((m) => (m === code ? null : code));
+      return;
+    }
     const chip = (e.target as HTMLElement).closest<HTMLElement>("[data-cite]");
     if (!chip) return;
+    setModule(null);
     const n = Number(chip.dataset.cite);
     if (!msg.retrieval?.[n - 1]) {
       setShowSources(true);
@@ -372,7 +459,11 @@ function Bubble({ msg, onRate, onRetry, plain }: { msg: ChatMessage; onRate: (r:
       aria-busy={msg.streaming || undefined}
       className={cx("rise relative max-w-[88%] self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-3.5 pt-2.5 text-body leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.04)]", plain || msg.streaming ? "pb-2.5" : "pb-7")}
     >
-      <div className={cx("md", msg.streaming && "streaming")} data-active-cite={active ?? undefined} onClick={onAnswerClick} dangerouslySetInnerHTML={{ __html: formatAnswer(msg.streaming ? closeOpenBold(msg.text) : msg.text) }} />
+      <div className={cx("md", msg.streaming && "streaming")} data-active-cite={active ?? undefined} onClick={onAnswerClick} dangerouslySetInnerHTML={{ __html: formatAnswer(msg.streaming ? closeOpenBold(msg.text) : msg.text, plain || msg.streaming ? undefined : modules?.isCode) }} />
+
+      {msg.stopped && <div className="mt-1 text-caption text-faint italic">Stopped.</div>}
+
+      {module && modules && <ModuleCard code={module} modules={modules} onClose={() => setModule(null)} />}
 
       {msg.interrupted && (
         <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2 text-meta text-warn">
@@ -461,6 +552,51 @@ function Bubble({ msg, onRate, onRetry, plain }: { msg: ChatMessage; onRate: (r:
         </button>
       </div>
       )}
+    </div>
+  );
+}
+
+/** What the tracker knows about a module the answer mentions, with ways to act on it. */
+function ModuleCard({ code, modules, onClose }: { code: string; modules: Modules; onClose: () => void }) {
+  const { catalog, courses } = modules;
+  const c = catalogCourse(code, catalog);
+  if (!c) return null;
+  const mine = courses.find((x) => !x.hypothetical && (resolveCode(x.name, catalog) || codeOf(x.name)) === code);
+  const pattern = offeringPattern(code, catalog);
+  const category = CATEGORIES.find((k) => k.id === c.category)?.name || c.category;
+  const status = mine ? { completed: "Completed", "in-progress": "In progress", planned: "Planned" }[mine.status] : null;
+  return (
+    <div className="pop mt-2 rounded-xl border border-line bg-panel-2 p-3 text-meta" role="region" aria-label={`Module ${code}`}>
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold">{c.name}</div>
+          <div className="text-caption text-muted">
+            {code} · {c.ects} ECTS · {category}
+            {c.compulsory ? " · compulsory" : ""}
+            {pattern ? ` · ${pattern.pattern === "both" ? "every semester" : `usually ${pattern.pattern}`}` : ""}
+          </div>
+        </div>
+        <button onClick={onClose} aria-label="Close module" className="cursor-pointer rounded-md p-0.5 text-faint hover:text-ink">
+          <X size={14} />
+        </button>
+      </div>
+      {mine && (
+        <div className="mt-2 rounded-lg bg-accent-soft px-2 py-1 text-caption text-accent">
+          In your list: {status}
+          {mine.semester && mine.semester !== "Unscheduled" ? `, ${mine.semester}` : ""}
+          {mine.grade ? ` (${mine.grade})` : ""}
+        </div>
+      )}
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {!mine && (
+          <button onClick={() => modules.onAdd(code)} className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-caption font-semibold text-white dark:text-paper">
+            <Plus size={12} /> Add to plan
+          </button>
+        )}
+        <button onClick={() => modules.onShow(code)} className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-1 text-caption font-medium hover:border-accent hover:text-accent">
+          <Search size={12} /> Show in Catalog
+        </button>
+      </div>
     </div>
   );
 }

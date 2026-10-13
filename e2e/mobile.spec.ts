@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { byCode, importFixture, noHorizontalScroll, open } from "./helpers";
+import { byCode, importFixture, isolate, noHorizontalScroll, open } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await open(page);
@@ -101,6 +101,23 @@ test("the assistant opens full screen above the navigation", async ({ page }) =>
   await expect(panel.getByPlaceholder(/Ask about the AEDS programme/)).toBeInViewport();
   await panel.getByRole("button", { name: "Close chat" }).click();
   await expect(page.getByRole("button", { name: "Open AEDS AI Assistant chat" })).toBeVisible();
+});
+
+test("a module in an answer opens the Catalog, stepping the chat aside", async ({ page }) => {
+  await isolate(page, () => ({ status: 200, body: { answer: "Take wir895 next semester.", thread_id: "t", query_log_id: 2 } }));
+  await page.getByRole("button", { name: "Open AEDS AI Assistant chat" }).click();
+  const panel = page.getByRole("dialog", { name: "AEDS AI Assistant" });
+  await panel.getByPlaceholder(/Ask about the AEDS programme/).fill("What next?");
+  await panel.getByPlaceholder(/Ask about the AEDS programme/).press("Enter");
+  await panel.getByRole("button", { name: "Module wir895" }).click();
+  const card = panel.getByRole("region", { name: "Module wir895" });
+  await expect(card).toContainText("Industrial Organization");
+  await expect(panel.getByRole("group", { name: "Suggested follow-up questions" })).toContainText("When is wir895 offered");
+  await noHorizontalScroll(page);
+  await card.getByRole("button", { name: /Show in Catalog/ }).click();
+  await expect(page.getByRole("button", { name: "Open AEDS AI Assistant chat" })).toBeVisible();
+  await expect(page.locator("main h1")).toHaveText("Catalog");
+  await expect(page.getByPlaceholder(/Search code, title, lecturer/)).toHaveValue("wir895");
 });
 
 test("the page content starts near the top on a phone", async ({ page }, info) => {

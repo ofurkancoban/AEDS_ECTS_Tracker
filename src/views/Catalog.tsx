@@ -1,7 +1,8 @@
 import { Check, ChevronDown, Clock, ExternalLink, GraduationCap, Languages, Plus, Search, SlidersHorizontal, Sparkles, User } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Badge, CategoryDot, CategoryTag, Empty, cx } from "../components/ui";
 import { codeOf, offeringPattern, resolveCode, type CatalogCourse } from "../lib/catalog";
+import { takeCatalogFocus, useCatalogFocus } from "../lib/catalogFocus";
 import { CATEGORIES, PRIOR_KNOWLEDGE } from "../lib/constants";
 import { useRatings, type Ratings } from "../lib/ratings";
 import { allSemesters, planningSemester } from "../lib/semesters";
@@ -17,7 +18,8 @@ export function Catalog() {
   const { catalog, courses, openAdd } = useTracker();
   const ratings = useRatings();
   const plan = planningSemester();
-  const [q, setQ] = useState("");
+  // Opened from the assistant on one module: search for its code.
+  const [q, setQ] = useState(() => takeCatalogFocus() || "");
   const [cat, setCat] = useState<CategoryId | "all">("all");
   const [language, setLanguage] = useState("any");
   const [offering, setOffering] = useState<Offering>("any");
@@ -26,6 +28,17 @@ export function Catalog() {
   const [compulsoryOnly, setCompulsoryOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("code");
   const [showFilters, setShowFilters] = useState(false);
+  useCatalogFocus(
+    useCallback((code: string) => {
+      setQ(code);
+      setCat("all");
+      setLanguage("any");
+      setOffering("any");
+      setOpenNow(false);
+      setHideTaken(false);
+      setCompulsoryOnly(false);
+    }, []),
+  );
 
   const taken = useMemo(() => {
     const m = new Map<string, string>();

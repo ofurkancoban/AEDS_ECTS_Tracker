@@ -215,7 +215,9 @@ describe("AEDS Assistant streaming", () => {
     expect(within(panel).getByRole("status").textContent).toContain("Understanding your question");
     await push(ev("stage", { stage: "searching" }));
     expect(within(panel).getByRole("status").textContent).toContain("Searching the programme documents");
-    expect((within(panel).getByRole("button", { name: "Send message" }) as HTMLButtonElement).disabled).toBe(true);
+    // While it is writing, Send becomes Stop.
+    expect(within(panel).queryByRole("button", { name: "Send message" })).toBeNull();
+    expect(within(panel).getByRole("button", { name: "Stop answer" })).toBeTruthy();
 
     await push(ev("stage", { stage: "writing" }) + ev("token", { text: "The thesis" }));
     await waitFor(() => expect(answerText(panel)).toBe("The thesis"));
@@ -277,6 +279,103 @@ describe("AEDS Assistant streaming", () => {
     expect(await within(panel).findByText(/connection was interrupted/)).toBeTruthy();
     expect(within(panel).getByRole("button", { name: "Try again" })).toBeTruthy();
     expect(within(panel).queryByRole("status")).toBeNull();
+  });
+});
+
+describe("AEDS Assistant stop, modules and follow-ups", () => {
+  const ask = async (user: ReturnType<typeof userEvent.setup>, panel: HTMLElement, q: string) => {
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), q + "{Enter}");
+    await waitFor(() => expect(live).not.toBeNull());
+  };
+
+  it("stops an answer, keeping what was written", async () => {
+    manual = true;
+    const { user, panel } = await openAssistant();
+    await ask(user, panel, "Retakes?");
+    await push(ev("token", { text: "You can retake" }));
+    await waitFor(() => expect(panel.querySelector(".md")?.textContent).toContain("You can retake"));
+    await user.click(within(panel).getByRole("button", { name: "Stop answer" }));
+    expect(await within(panel).findByText("Stopped.")).toBeTruthy();
+    expect([...panel.querySelectorAll(".md")].at(-1)?.textContent).toBe("You can retake");
+    expect(within(panel).getByRole("button", { name: "Send message" })).toBeTruthy();
+    expect(within(panel).queryByText(/Connection lost/)).toBeNull();
+    expect(JSON.parse(localStorage.getItem("aedsRagMessages")!)[1]).toMatchObject({ text: "You can retake", stopped: true });
+    // A stopped answer gets no follow-up suggestions.
+    expect(within(panel).queryByRole("group", { name: "Suggested follow-up questions" })).toBeNull();
+  });
+
+  it("stops before any text arrives", async () => {
+    manual = true;
+    const { user, panel } = await openAssistant();
+    await ask(user, panel, "Retakes?");
+    await user.click(within(panel).getByRole("button", { name: "Stop answer" }));
+    expect(await within(panel).findByText("Stopped.")).toBeTruthy();
+    expect(within(panel).queryByRole("status")).toBeNull();
+  });
+
+  it("shows sources as soon as done arrives, without waiting for the stream to close", async () => {
+    manual = true;
+    const { user, panel } = await openAssistant();
+    await ask(user, panel, "Retakes?");
+    await push(ev("token", { text: "Twice [1]." }) + ev("done", { ...sample, final_answer: "Twice [1]." }));
+    // The server's contribution check keeps the stream open; the answer is complete anyway.
+    expect(await within(panel).findByRole("button", { name: /Sources \(1\)/ })).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: "Send message" })).toBeTruthy();
+    await act(async () => live!.enqueue(new TextEncoder().encode(ev("contribution", { auto_flagged_contribution: null }))));
+    await act(async () => live!.close());
+    expect(within(panel).getAllByText(/Twice/)).toHaveLength(1);
+  });
+
+  it("turns module codes into cards with the student's status and actions", async () => {
+    chatReply = () => ({ status: 200, body: { answer: "Take wir895 next, you already passed wir821.", thread_id: "t", query_log_id: 4 } });
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "What next?{Enter}");
+    await user.click(await within(panel).findByRole("button", { name: "Module wir821" }));
+    let card = within(panel).getByRole("region", { name: "Module wir821" });
+    expect(within(card).getByText("International Trade, Production and Change")).toBeTruthy();
+    expect(within(card).getByText(/In your list: Completed, SoSe24 \(3\.0\)/)).toBeTruthy();
+    expect(within(card).queryByRole("button", { name: /Add to plan/ })).toBeNull();
+
+    await user.click(within(panel).getByRole("button", { name: "Module wir895" }));
+    expect(within(panel).queryByRole("region", { name: "Module wir821" })).toBeNull();
+    card = within(panel).getByRole("region", { name: "Module wir895" });
+    expect(within(card).getByText(/6 ECTS · Economics.*compulsory.*usually WiSe/)).toBeTruthy();
+    await user.click(within(card).getByRole("button", { name: /Add to plan/ }));
+    const palette = await screen.findByRole("dialog", { name: "Add a course" });
+    expect(within(palette).getByText(/Industrial Organization/)).toBeTruthy();
+  });
+
+  it("opens the Catalog on a module from its card", async () => {
+    chatReply = () => ({ status: 200, body: { answer: "Have a look at wir895.", thread_id: "t" } });
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Hi{Enter}");
+    await user.click(await within(panel).findByRole("button", { name: "Module wir895" }));
+    await user.click(within(panel).getByRole("button", { name: /Show in Catalog/ }));
+    const search = (await screen.findByPlaceholderText(/Search code, title, lecturer/, {}, { timeout: 3000 })) as HTMLInputElement;
+    expect(search.value).toBe("wir895");
+  });
+
+  it("does not link codes that are not in the catalog, or inside links", async () => {
+    chatReply = () => ({ status: 200, body: { answer: "Not abc123, but [wir895](https://x.example/wir895) and wir895.", thread_id: "t" } });
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Hi{Enter}");
+    await within(panel).findAllByRole("button", { name: "Module wir895" });
+    expect(within(panel).getAllByRole("button", { name: "Module wir895" })).toHaveLength(1);
+    expect(within(panel).queryByRole("button", { name: "Module abc123" })).toBeNull();
+    expect(within(panel).getByRole("link", { name: "wir895" }).getAttribute("href")).toBe("https://x.example/wir895");
+  });
+
+  it("suggests follow-up questions under the latest answer and asks one on click", async () => {
+    chatReply = () => ({ status: 200, body: { answer: "You can resit a failed exam twice. Consider wir895.", thread_id: "t", query_log_id: 1 } });
+    const { user, panel } = await openAssistant();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "Can I retake a failed exam?{Enter}");
+    const group = await within(panel).findByRole("group", { name: "Suggested follow-up questions" });
+    const chips = within(group).getAllByRole("button").map((b) => b.textContent);
+    expect(chips).toEqual(["When is wir895 offered, and how is it assessed?", "What happens if I fail the resit as well?", "Can I retake an exam I passed to improve my grade?"]);
+    await user.click(within(group).getByRole("button", { name: "What happens if I fail the resit as well?" }));
+    await waitFor(() => expect(requests.filter((r) => r.url.endsWith("/chat/stream")).map((r) => (r.body as { message: string }).message)).toContain("What happens if I fail the resit as well?"));
+    // The asked one is not offered again.
+    await waitFor(() => expect(within(panel).queryByRole("button", { name: "What happens if I fail the resit as well?" })).toBeNull());
   });
 });
 
