@@ -82,13 +82,16 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
         >
           <span
             className={cx(
-              "num flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-micro font-bold uppercase",
+              "num flex h-9 w-9 shrink-0 flex-col items-center justify-center gap-px rounded-xl text-center text-micro leading-none font-bold uppercase",
               !tone && (course.status === "in-progress" ? "bg-warn-soft text-warn" : course.status === "completed" ? "bg-accent-soft text-accent" : "bg-ink/5 text-muted"),
             )}
             style={tone ? { background: tone.soft, color: tone.color } : undefined}
             title={tone ? `Grade ${course.grade}` : undefined}
           >
-            {(code || "·").replace(/^([a-z]+)(\d+)$/, "$1\u200b$2").slice(0, 7)}
+            {/* "wir821" as two centred lines, letters over digits. */}
+            {(/^([a-z]+)(\d+)$/.exec(code || "")?.slice(1) || [(code || "·").slice(0, 7)]).map((part, i) => (
+              <span key={i}>{part}</span>
+            ))}
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
