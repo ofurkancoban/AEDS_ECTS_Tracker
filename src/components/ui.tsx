@@ -86,7 +86,7 @@ export function Modal({
   }, [open, onClose]);
   if (!open) return null;
   return createPortal(
-    <div className="fade fixed inset-0 z-[9000] flex items-end justify-center bg-[#14120e]/50 backdrop-blur-[2px] sm:items-center sm:p-6" onMouseDown={onClose}>
+    <div className="fade fixed inset-0 z-[9800] flex items-end justify-center bg-[#14120e]/50 backdrop-blur-[2px] sm:items-center sm:p-6" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -294,7 +294,7 @@ export function Bar({ segments, height = 8 }: { segments: { value: number; color
 export function Toasts() {
   const { toasts, dismissToast } = useTracker();
   return createPortal(
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[9600] flex flex-col items-center gap-2 px-4 lg:bottom-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[9900] flex flex-col items-center gap-2 px-4 lg:bottom-6">
       {toasts.map((t) => (
         <div
           key={t.id}

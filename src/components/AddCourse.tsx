@@ -138,7 +138,7 @@ function Palette({ onClose }: { onClose: () => void }) {
     });
 
   return (
-    <div className="fade fixed inset-0 z-[9000] flex items-start justify-center bg-[#14120e]/50 backdrop-blur-[2px] sm:p-6 sm:pt-[10vh]" onMouseDown={onClose}>
+    <div className="fade fixed inset-0 z-[9800] flex items-start justify-center bg-[#14120e]/50 backdrop-blur-[2px] sm:p-6 sm:pt-[10vh]" onMouseDown={onClose}>
       <div
         className="pop flex h-full w-full max-w-2xl flex-col overflow-hidden border-line bg-panel shadow-[var(--shadow-lg)] sm:h-auto sm:max-h-[78vh] sm:rounded-3xl sm:border"
         onMouseDown={(e) => e.stopPropagation()}
@@ -164,7 +164,7 @@ function Palette({ onClose }: { onClose: () => void }) {
                 Esc
               </button>
             </div>
-            <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-line px-4 py-2.5">
+            <div className="flex flex-wrap gap-1.5 border-b border-line px-4 py-2.5">
               {(["all", ...CATEGORIES.map((c) => c.id)] as const).map((id) => (
                 <button
                   key={id}
