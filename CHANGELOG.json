@@ -18,7 +18,7 @@
       "CSV import understands files saved by Excel with German settings (semicolons, decimal commas)",
       "A damaged backup file or saved entry can no longer break the app; unreadable entries are skipped and reported",
       "Undo from the 'Removed' message now always brings back that course, and the countdown shows how long ago a passed graduation date was",
-      "Fresh default colours: Emerald, a vivid emerald green with orange, in light and dark mode. Prefer the old look? Classic is still under Appearance, which also gains five new palettes: Midnight Teal, Uni Blue, Sage & Clay and Electric. If you picked a palette before, you keep it",
+      "Fresh default colours: Emerald, a vivid emerald green with orange, in light and dark mode. Prefer the old look? Classic is still under Appearance, which also gains four more palettes: Midnight Teal, Uni Blue, Sage & Clay and Electric. If you picked a palette before, you keep it",
       "New interactive guided tour: a spotlight, animated arrows and a tapping hand walk you through adding courses, reading your progress, planning, the Catalog and the AI assistant. Steps marked Try it wait for you to do it yourself. It starts on your first visit and can be replayed from Guided tour or How it works",
       "Stop an AEDS Assistant answer midway with the Stop button; what was already written stays",
       "Module codes in AEDS Assistant answers are now tappable: see the module's credits, category and when it runs, whether it is already in your list, and add it to your plan or open it in the Catalog",
