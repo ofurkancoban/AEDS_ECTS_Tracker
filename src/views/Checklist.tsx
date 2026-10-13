@@ -84,7 +84,7 @@ export function Checklist() {
           </span>
           <div>
             <div className="eyebrow">Graduation readiness</div>
-            <div className="num text-[22px] font-semibold">
+            <div className="num text-display-sm font-semibold">
               {doneCount} / {marks.length}
             </div>
           </div>
@@ -92,12 +92,12 @@ export function Checklist() {
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink/[0.06]">
           <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${(doneCount / marks.length) * 100}%` }} />
         </div>
-        <div className="mt-5 grid gap-2 text-[12.5px] text-muted">
+        <div className="mt-5 grid gap-2 text-meta text-muted">
           <Legend mark="done">Done</Legend>
           <Legend mark="covered">Covered by running or planned courses</Legend>
           <Legend mark="short">Still open</Legend>
         </div>
-        <p className="mt-5 text-[12px] leading-relaxed text-faint">
+        <p className="mt-5 text-meta leading-relaxed text-faint">
           This checklist mirrors the programme rules as the tracker understands them. Always confirm with the examination office before registering your thesis.
         </p>
       </aside>
@@ -108,7 +108,7 @@ export function Checklist() {
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="card p-2">
-      <h3 className="px-3 pt-2.5 pb-2 font-serif text-[17px] font-semibold">{title}</h3>
+      <h3 className="px-3 pt-2.5 pb-2 font-serif text-title font-semibold">{title}</h3>
       <div className="grid grid-cols-1">{children}</div>
     </section>
   );
@@ -132,8 +132,8 @@ function Row({ mark, label, detail }: { mark: Mark; label: ReactNode; detail?: R
     <div className="flex items-start gap-3 rounded-xl px-3 py-2.5 hover:bg-ink/[0.025]">
       <Icon mark={mark} />
       <div className="min-w-0 flex-1">
-        <div className={cx("text-[14px]", mark === "done" && "text-muted line-through decoration-line-strong")}>{label}</div>
-        {detail && <div className="mt-0.5 text-[12px] text-muted">{detail}</div>}
+        <div className={cx("text-body", mark === "done" && "text-muted line-through decoration-line-strong")}>{label}</div>
+        {detail && <div className="mt-0.5 text-meta text-muted">{detail}</div>}
       </div>
     </div>
   );

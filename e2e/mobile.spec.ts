@@ -101,3 +101,12 @@ test("the assistant opens full screen above the navigation", async ({ page }) =>
   await panel.getByRole("button", { name: "Close chat" }).click();
   await expect(page.getByRole("button", { name: "Open AEDS AI Assistant chat" })).toBeVisible();
 });
+
+test("the page content starts near the top on a phone", async ({ page }, info) => {
+  const first = page.locator("main section").first();
+  const box = (await first.boundingBox())!;
+  expect(box.y).toBeLessThan(page.viewportSize()!.height * 0.3);
+  await expect(page.getByRole("switch", { name: /What-if mode/ }).first()).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: `test-results/${info.project.name}-top.png` });
+});

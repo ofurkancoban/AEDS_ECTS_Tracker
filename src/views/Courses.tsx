@@ -36,7 +36,7 @@ export function Courses() {
               key={f}
               onClick={() => setFilter(f)}
               className={cx(
-                "h-8 shrink-0 cursor-pointer rounded-lg px-3 text-[12.5px] font-medium transition",
+                "h-8 shrink-0 cursor-pointer rounded-lg px-3 text-meta font-medium transition",
                 filter === f ? "bg-ink text-paper" : "text-muted hover:text-ink",
               )}
             >
@@ -87,13 +87,13 @@ function CategorySection({
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 pt-2.5 pb-3">
         <div className="flex min-w-0 flex-1 basis-[200px] items-center gap-2.5">
           <CategoryDot id={cat.id} size={11} />
-          <h3 className="truncate font-serif text-[18px] font-semibold">{cat.name}</h3>
-          {cat.gpa && <span className="num whitespace-nowrap rounded-md bg-ink/5 px-1.5 py-0.5 text-[11.5px] font-semibold text-muted">⌀ {cat.gpa}</span>}
+          <h3 className="truncate font-serif text-title font-semibold">{cat.name}</h3>
+          {cat.gpa && <span className="num whitespace-nowrap rounded-md bg-ink/5 px-1.5 py-0.5 text-caption font-semibold text-muted">⌀ {cat.gpa}</span>}
         </div>
         <div className="ml-auto flex items-center gap-3">
           {req > 0 ? (
             <div className="flex w-40 flex-col gap-1">
-              <div className="num text-right text-[12px] text-muted">
+              <div className="num text-right text-meta text-muted">
                 <span className="font-semibold text-ink">{cat.completed}</span> / {req} ECTS
               </div>
               <Bar
@@ -106,7 +106,7 @@ function CategorySection({
               />
             </div>
           ) : (
-            <span className="num text-[12px] text-muted">{cat.completed + cat.inProgress + cat.planned} ECTS</span>
+            <span className="num text-meta text-muted">{cat.completed + cat.inProgress + cat.planned} ECTS</span>
           )}
           <button
             onClick={onAdd}
@@ -119,13 +119,13 @@ function CategorySection({
         </div>
       </header>
       {items.length ? (
-        <div className="grid grid-cols-1 gap-0.5">
+        <div className="density-gap grid grid-cols-1 gap-0.5">
           {items.map((c) => (
             <CourseRow key={c.id} course={c} />
           ))}
         </div>
       ) : (
-        <div className="mx-1 mb-1 rounded-xl border border-dashed border-line px-4 py-4 text-center text-[12.5px] text-faint">
+        <div className="mx-1 mb-1 rounded-xl border border-dashed border-line px-4 py-4 text-center text-meta text-faint">
           {cat.id === "specialization"
             ? "Drop an elective here, or add one. Economics, empirical and data science electives can count here too."
             : cat.id === "further" || cat.id === "additional"

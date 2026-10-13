@@ -41,12 +41,12 @@ export function MoveSheet() {
                     course.semester === s ? "border-accent bg-accent-soft" : "border-line hover:border-line-strong",
                   )}
                 >
-                  <span className="flex items-center gap-1.5 text-[13.5px] font-semibold">
+                  <span className="flex items-center gap-1.5 text-body-sm font-semibold">
                     {s}
                     {s === cur && <span className="h-1.5 w-1.5 rounded-full bg-accent" title="Current semester" />}
                   </span>
                   {s !== "Unscheduled" && (
-                    <span className={cx("num text-[11px]", after > MAX_ECTS_PER_SEMESTER ? "text-warn" : "text-muted")}>{after} ECTS after</span>
+                    <span className={cx("num text-caption", after > MAX_ECTS_PER_SEMESTER ? "text-warn" : "text-muted")}>{after} ECTS after</span>
                   )}
                 </button>
               );
@@ -62,7 +62,7 @@ export function MoveSheet() {
                 key={s}
                 onClick={() => updateCourse(course.id, { status: s })}
                 className={cx(
-                  "h-9 flex-1 cursor-pointer rounded-lg text-[13px] font-medium transition",
+                  "h-9 flex-1 cursor-pointer rounded-lg text-body-sm font-medium transition",
                   course.status === s ? "bg-ink text-paper" : "text-muted hover:text-ink",
                 )}
               >
@@ -81,7 +81,7 @@ export function MoveSheet() {
                   key={g}
                   onClick={() => updateCourse(course.id, { grade: course.grade === g ? "" : g })}
                   className={cx(
-                    "num h-9 w-12 cursor-pointer rounded-lg border text-[13px] font-semibold transition",
+                    "num h-9 w-12 cursor-pointer rounded-lg border text-body-sm font-semibold transition",
                     course.grade === g ? (g === "5.0" ? "border-danger bg-danger text-white" : "border-accent bg-accent text-white dark:text-paper") : "border-line",
                   )}
                 >
@@ -103,7 +103,7 @@ export function MoveSheet() {
                   key={id}
                   onClick={() => updateCourse(course.id, { category: id })}
                   className={cx(
-                    "h-9 cursor-pointer rounded-xl border px-3 text-[13px] font-medium",
+                    "h-9 cursor-pointer rounded-xl border px-3 text-body-sm font-medium",
                     course.category === id ? "border-accent bg-accent-soft text-accent" : "border-line text-muted",
                   )}
                 >

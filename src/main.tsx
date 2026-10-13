@@ -9,6 +9,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { loadCatalog } from "./lib/catalog";
 import { applyPalette, loadPalette } from "./lib/palettes";
+import { applyDensity, loadDensity } from "./lib/preferences";
 import { installTouchDrag } from "./lib/touchDrag";
 
 // Apply the saved theme and palette before first paint to avoid a light flash.
@@ -19,6 +20,7 @@ try {
   /* ignore */
 }
 applyPalette(loadPalette());
+applyDensity(loadDensity());
 
 createRoot(document.getElementById("root")!).render(<App />);
 

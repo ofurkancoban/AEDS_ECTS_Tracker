@@ -20,7 +20,12 @@
       "Undo from the 'Removed' message now always brings back that course, and the countdown shows how long ago a passed graduation date was",
       "AEDS Assistant answers now show their sources: tap a [1] marker to read the cited passage and open the document, or expand Sources to see every document and page used",
       "New 'Workload by semester' in the Planner shows credits, weekly hours and end-of-term exams per semester, and suggests moving a course when a semester is overloaded",
-      "Print or save as PDF now creates a one-page-style progress report (progress ring, requirements, compulsory modules, courses by semester and the suggested schedule) for advising meetings"
+      "Print or save as PDF now creates a one-page-style progress report (progress ring, requirements, compulsory modules, courses by semester and the suggested schedule) for advising meetings",
+      "Cleaner Overview: alerts are grouped in one 'Needs attention' panel, most important first, and new users get a short three-step welcome",
+      "Grades are colour-coded everywhere (course list, timeline, charts), and a new chart shows credits and GPA per semester together",
+      "Timeline gets a semester strip to jump between terms, a 'today' marker and a one-click way to hide past semesters",
+      "Smoother feel: animated progress, soft transitions between views (off when your system asks for reduced motion) and a small celebration when you meet every requirement",
+      "The logo and browser tab icon follow your colour palette, phones show more content at the top, and Appearance has a new Compact density option"
     ]
   },
   {

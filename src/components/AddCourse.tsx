@@ -160,9 +160,9 @@ function Palette({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder="Search by code, title or lecturer…"
-                className="h-8 min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint"
+                className="h-8 min-w-0 flex-1 bg-transparent text-title-sm outline-none placeholder:text-faint"
               />
-              <button onClick={onClose} className="cursor-pointer rounded-lg border border-line px-2 py-0.5 text-[11px] text-muted hover:text-ink">
+              <button onClick={onClose} className="cursor-pointer rounded-lg border border-line px-2 py-0.5 text-caption text-muted hover:text-ink">
                 Esc
               </button>
             </div>
@@ -175,7 +175,7 @@ function Palette({ onClose }: { onClose: () => void }) {
                     inputRef.current?.focus();
                   }}
                   className={cx(
-                    "inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium transition",
+                    "inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-meta font-medium transition",
                     filter === id ? "bg-ink text-paper" : "text-muted hover:bg-ink/5 hover:text-ink",
                   )}
                 >
@@ -200,9 +200,9 @@ function Palette({ onClose }: { onClose: () => void }) {
                       active === i ? "bg-accent-soft" : "hover:bg-ink/5",
                     )}
                   >
-                    <span className="num w-14 shrink-0 text-[12px] font-semibold text-muted">{e.code || "·"}</span>
+                    <span className="num w-14 shrink-0 text-meta font-semibold text-muted">{e.code || "·"}</span>
                     <span className="min-w-0 flex-1">
-                      <span className={cx("block truncate text-[14px]", isTaken && "text-muted")}>{e.title}</span>
+                      <span className={cx("block truncate text-body", isTaken && "text-muted")}>{e.title}</span>
                       <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
                         <CategoryTag id={e.category} />
                         {compulsory && <Badge tone="accent">compulsory</Badge>}
@@ -214,7 +214,7 @@ function Palette({ onClose }: { onClose: () => void }) {
                         )}
                       </span>
                     </span>
-                    <span className="num shrink-0 text-[12px] text-muted">{e.ects} ECTS</span>
+                    <span className="num shrink-0 text-meta text-muted">{e.ects} ECTS</span>
                     {active === i && <CornerDownLeft size={14} className="hidden shrink-0 text-accent sm:block" />}
                   </button>
                 );
@@ -232,14 +232,14 @@ function Palette({ onClose }: { onClose: () => void }) {
                   <span className="flex h-7 w-14 shrink-0 items-center text-accent">
                     <Plus size={16} />
                   </span>
-                  <span className="text-[14px]">
+                  <span className="text-body">
                     Add “<span className="font-semibold">{query.trim()}</span>” as a custom course
                   </span>
                 </button>
               )}
-              {!results.length && !custom && <div className="px-4 py-10 text-center text-[13.5px] text-muted">Type to search the AEDS catalog.</div>}
+              {!results.length && !custom && <div className="px-4 py-10 text-center text-body-sm text-muted">Type to search the AEDS catalog.</div>}
             </div>
-            <div className="hidden items-center gap-4 border-t border-line bg-panel-2 px-5 py-2 text-[11.5px] text-faint sm:flex">
+            <div className="hidden items-center gap-4 border-t border-line bg-panel-2 px-5 py-2 text-caption text-faint sm:flex">
               <span>↑↓ navigate</span>
               <span>↵ select</span>
               <span>esc close</span>
@@ -303,13 +303,13 @@ function Configure({ entry, onBack, onDone, taken }: { entry: Entry; onBack: () 
           <ArrowLeft size={18} />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="num text-[11.5px] font-semibold text-muted">{entry.code ? entry.code.toUpperCase() : "Custom course"}</div>
-          <div className="truncate font-serif text-[18px] font-semibold">{entry.title}</div>
+          <div className="num text-caption font-semibold text-muted">{entry.code ? entry.code.toUpperCase() : "Custom course"}</div>
+          <div className="truncate font-serif text-title font-semibold">{entry.title}</div>
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
         {(info?.professor || pattern || difficulty) && (
-          <div className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-muted">
+          <div className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-meta text-muted">
             {info?.professor && <span>{info.professor}</span>}
             {pattern && <span>{pattern.pattern === "both" ? "Every semester" : pattern.pattern === "WiSe" ? "Winter term only" : "Summer term only"}</span>}
             {info?.examType && <span>{info.examType}</span>}
@@ -330,7 +330,7 @@ function Configure({ entry, onBack, onDone, taken }: { entry: Entry; onBack: () 
                 key={id}
                 onClick={() => setCategory(id)}
                 className={cx(
-                  "inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border px-3 text-[13px] font-medium transition",
+                  "inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border px-3 text-body-sm font-medium transition",
                   category === id ? "border-accent bg-accent-soft text-accent" : "border-line text-muted hover:border-line-strong hover:text-ink",
                 )}
               >
@@ -376,7 +376,7 @@ function Configure({ entry, onBack, onDone, taken }: { entry: Entry; onBack: () 
                   key={g}
                   onClick={() => setGrade(grade === g ? "" : g)}
                   className={cx(
-                    "num h-9 w-12 cursor-pointer rounded-lg border text-[13px] font-semibold transition",
+                    "num h-9 w-12 cursor-pointer rounded-lg border text-body-sm font-semibold transition",
                     grade === g
                       ? g === "5.0"
                         ? "border-danger bg-danger text-white"
@@ -392,7 +392,7 @@ function Configure({ entry, onBack, onDone, taken }: { entry: Entry; onBack: () 
         )}
 
         {whatIf && (
-          <label className="mt-4 flex items-center gap-2 text-[13px]">
+          <label className="mt-4 flex items-center gap-2 text-body-sm">
             <input type="checkbox" checked={hypothetical} onChange={(e) => setHypothetical(e.target.checked)} className="accent-[var(--warn)]" />
             What-if course (not saved to your real record, used for the projected GPA)
           </label>
@@ -443,7 +443,7 @@ function Configure({ entry, onBack, onDone, taken }: { entry: Entry; onBack: () 
 function Note({ tone, icon, children }: { tone: "warn" | "danger" | "muted"; icon: React.ReactNode; children: React.ReactNode }) {
   const t = { warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", muted: "bg-ink/5 text-muted" }[tone];
   return (
-    <div className={cx("flex items-start gap-2 rounded-xl px-3 py-2 text-[12.5px]", t)}>
+    <div className={cx("flex items-start gap-2 rounded-xl px-3 py-2 text-meta", t)}>
       <span className="mt-0.5">{icon}</span>
       <span>{children}</span>
     </div>

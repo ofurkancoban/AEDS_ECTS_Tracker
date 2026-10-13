@@ -41,16 +41,16 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
   render() {
     if (!this.state.error) return this.props.children;
     const btn =
-      "inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-line bg-panel px-4 text-sm font-medium text-ink hover:border-line-strong";
+      "inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-line bg-panel px-4 text-body font-medium text-ink hover:border-line-strong";
     return (
       <div role="alert" className="flex min-h-screen items-center justify-center p-6">
         <div className="card w-full max-w-lg p-6">
-          <h1 className="font-serif text-2xl font-semibold">Something went wrong</h1>
-          <p className="mt-2 text-[14px] leading-relaxed text-muted">
+          <h1 className="font-serif text-display font-semibold">Something went wrong</h1>
+          <p className="mt-2 text-body leading-relaxed text-muted">
             The tracker hit an unexpected error. Your courses are still saved in this browser. Download a copy first, then try reloading or open the
             classic view.
           </p>
-          <pre className="num mt-4 max-h-28 overflow-auto rounded-xl bg-ink/5 p-3 text-[12px] whitespace-pre-wrap text-muted">{String(this.state.error.message)}</pre>
+          <pre className="num mt-4 max-h-28 overflow-auto rounded-xl bg-ink/5 p-3 text-meta whitespace-pre-wrap text-muted">{String(this.state.error.message)}</pre>
           <div className="mt-5 flex flex-wrap gap-2">
             <button className={btn + " !border-accent !bg-accent !text-white"} onClick={this.download}>
               Download my data

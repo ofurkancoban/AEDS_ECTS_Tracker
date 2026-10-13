@@ -32,6 +32,8 @@ import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { AddCourseDialog } from "./components/AddCourse";
 import { AppearanceModal } from "./components/Appearance";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Logo } from "./components/Logo";
+import { Celebration } from "./components/Celebration";
 import { MoveSheet } from "./components/MoveSheet";
 import { ChangelogModal, HowItWorksModal, ShareModal, useChangelog, useDataActions, useQrImport } from "./components/DataActions";
 import { Button, ConfirmDialog, IconButton, Menu, MenuDivider, MenuItem, MenuLabel, Modal, Toasts, cx } from "./components/ui";
@@ -209,19 +211,19 @@ function Shell() {
               key={n.id}
               onClick={() => setView(n.id)}
               className={cx(
-                "group flex h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-[14px] font-medium transition",
+                "group flex h-10 cursor-pointer items-center gap-3 rounded-xl px-3 text-body font-medium transition",
                 view === n.id ? "bg-ink text-paper shadow-[var(--shadow)]" : "text-muted hover:bg-ink/5 hover:text-ink",
               )}
             >
               {n.icon}
               <span className="flex-1 text-left">{n.label}</span>
-              <kbd className={cx("num text-[10.5px] opacity-0 transition group-hover:opacity-60", view === n.id && "opacity-50")}>{i + 1}</kbd>
+              <kbd className={cx("num text-micro opacity-0 transition group-hover:opacity-60", view === n.id && "opacity-50")}>{i + 1}</kbd>
             </button>
           ))}
         </nav>
 
         <div className="mt-6 rounded-2xl border border-line bg-panel p-3.5">
-          <div className="flex items-center justify-between text-[12px] text-muted">
+          <div className="flex items-center justify-between text-meta text-muted">
             <span>{currentSemester()}</span>
             <span className="num">
               {stats.completed}/{TOTAL_REQUIRED}
@@ -231,14 +233,14 @@ function Shell() {
             <div className="h-full rounded-full bg-accent transition-[width] duration-700" style={{ width: `${(stats.completed / TOTAL_REQUIRED) * 100}%` }} />
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-[12px] text-muted">GPA</span>
-            <span className="num text-[15px] font-semibold">{stats.gpa || "-"}</span>
+            <span className="text-meta text-muted">GPA</span>
+            <span className="num text-title-sm font-semibold">{stats.gpa || "-"}</span>
           </div>
         </div>
 
         <WhatIfToggle whatIf={whatIf} setWhatIf={setWhatIf} className="mt-3" />
 
-        <div className="mt-auto grid gap-1 text-[13px]">
+        <div className="mt-auto grid gap-1 text-body-sm">
           <SideLink icon={<CircleHelp size={16} />} onClick={() => setHowOpen(true)}>
             How it works
           </SideLink>
@@ -261,8 +263,8 @@ function Shell() {
             <Brand compact />
           </div>
           <div className="hidden min-w-0 flex-1 lg:block">
-            <h1 className="font-serif text-[22px] leading-tight font-semibold tracking-tight">{current.label}</h1>
-            <p className="truncate text-[12.5px] text-muted">{current.blurb}</p>
+            <h1 className="font-serif text-display-sm leading-tight font-semibold tracking-tight">{current.label}</h1>
+            <p className="truncate text-meta text-muted">{current.blurb}</p>
           </div>
           <div className="flex-1 lg:hidden" />
           <div className="flex items-center">
@@ -277,7 +279,7 @@ function Shell() {
           <div className="hidden lg:block">
             <Button variant="primary" onClick={() => openAdd()}>
               <Plus size={17} /> Add course
-              <kbd className="num ml-1 rounded-md bg-white/15 px-1.5 text-[10.5px] font-medium">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd>
+              <kbd className="num ml-1 rounded-md bg-white/15 px-1.5 text-micro font-medium">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd>
             </Button>
           </div>
         </div>
@@ -285,15 +287,17 @@ function Shell() {
 
       <main className="mx-auto max-w-6xl px-4 pt-5 pb-[calc(110px+env(safe-area-inset-bottom))] sm:px-6 lg:pt-7 lg:pb-16">
         <div className="mb-4 lg:hidden">
-          <h1 className="font-serif text-[26px] font-semibold tracking-tight">{current.label}</h1>
-          <p className="text-[13px] text-muted">{current.blurb}</p>
-          <WhatIfToggle whatIf={whatIf} setWhatIf={setWhatIf} className="mt-3" />
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="font-serif text-display font-semibold tracking-tight">{current.label}</h1>
+            <WhatIfToggle whatIf={whatIf} setWhatIf={setWhatIf} compact />
+          </div>
+          <p className="text-meta text-muted">{current.blurb}</p>
         </div>
 
         {(whatIf || hypotheticalCount > 0) && (
           <div
             role="status"
-            className="rise mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-dashed border-warn/60 bg-warn-soft px-4 py-2.5 text-[13px] text-warn"
+            className="rise mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-dashed border-warn/60 bg-warn-soft px-4 py-2.5 text-body-sm text-warn"
           >
             <Sparkles size={15} className="shrink-0" />
             <span className="min-w-0 flex-1">
@@ -321,11 +325,9 @@ function Shell() {
         )}
 
         {showInstall && (
-          <div className="rise mb-4 flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3 text-[13px]">
-            <Smartphone size={18} className="text-accent" />
-            <span className="flex-1">
-              {installEvt ? "Install the tracker on your home screen for quick access." : "Add this page to your home screen (Share → Add to Home Screen) for quick access."}
-            </span>
+          <div className="rise mb-3 flex items-center gap-2 rounded-xl border border-line bg-panel py-1.5 pr-1 pl-3 text-meta">
+            <Smartphone size={15} className="shrink-0 text-accent" />
+            <span className="min-w-0 flex-1 truncate">{installEvt ? "Install the app for quick access" : "Share → Add to Home Screen for quick access"}</span>
             {installEvt && (
               <Button
                 size="sm"
@@ -339,15 +341,15 @@ function Shell() {
                 Install
               </Button>
             )}
-            <IconButton label="Dismiss" onClick={() => patch({ installBannerDismissed: true })}>
-              <X size={16} />
+            <IconButton label="Dismiss install hint" className="h-8 w-8" onClick={() => patch({ installBannerDismissed: true })}>
+              <X size={15} />
             </IconButton>
           </div>
         )}
 
-        <Suspense fallback={<div className="py-20 text-center text-[13px] text-faint">Loading…</div>}>
+        <Suspense fallback={<div className="py-20 text-center text-body-sm text-faint">Loading…</div>}>
         <div key={view} className="rise">
-          {view === "overview" && <Overview onBackup={data.exportJson} />}
+          {view === "overview" && <Overview onBackup={data.exportJson} onImport={data.importCsv} />}
           {view === "courses" && <Courses />}
           {view === "timeline" && <Timeline />}
           {view === "planner" && <Planner />}
@@ -393,7 +395,7 @@ function Shell() {
                 setView(n.id);
               }}
               className={cx(
-                "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border px-2 py-4 text-[13px] font-medium",
+                "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border px-2 py-4 text-body-sm font-medium",
                 view === n.id ? "border-accent bg-accent-soft text-accent" : "border-line",
               )}
             >
@@ -402,7 +404,7 @@ function Shell() {
             </button>
           ))}
         </div>
-        <div className="mt-4 grid gap-1 border-t border-line pt-3 text-[14px]">
+        <div className="mt-4 grid gap-1 border-t border-line pt-3 text-body">
           <SideLink
             icon={<CircleHelp size={17} />}
             onClick={() => {
@@ -451,6 +453,7 @@ function Shell() {
         }}
       />
       <MoveSheet />
+      <Celebration />
       <ConfirmDialog />
       <Toasts />
       <Suspense fallback={null}>
@@ -464,10 +467,10 @@ function Shell() {
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <img src="./favicon-512.png" alt="" className="h-9 w-9 rounded-xl shadow-[var(--shadow)]" />
+      <Logo size={36} className="shrink-0 rounded-xl shadow-[var(--shadow)]" />
       <div className="leading-tight">
-        <div className="font-serif text-[17px] font-semibold tracking-tight whitespace-nowrap">AEDS Credit Tracker</div>
-        {!compact && <div className="text-[11.5px] text-muted">Applied Economics & Data Science</div>}
+        <div className="font-serif text-title font-semibold tracking-tight whitespace-nowrap">AEDS Credit Tracker</div>
+        {!compact && <div className="text-caption text-muted">Applied Economics & Data Science</div>}
       </div>
     </div>
   );
@@ -487,7 +490,7 @@ function NavTab({ item, active, onClick }: { item: (typeof NAV)[number]; active:
   return (
     <button
       onClick={onClick}
-      className={cx("flex h-full cursor-pointer flex-col items-center justify-center gap-1 text-[10.5px] font-medium transition", active ? "text-accent" : "text-muted")}
+      className={cx("flex h-full cursor-pointer flex-col items-center justify-center gap-1 text-micro font-medium transition", active ? "text-accent" : "text-muted")}
     >
       <span className={cx("flex h-7 w-12 items-center justify-center rounded-full transition", active && "bg-accent-soft")}>{item.icon}</span>
       {item.label}
@@ -495,26 +498,46 @@ function NavTab({ item, active, onClick }: { item: (typeof NAV)[number]; active:
   );
 }
 
-function WhatIfToggle({ whatIf, setWhatIf, className }: { whatIf: boolean; setWhatIf: (v: boolean) => void; className?: string }) {
+function WhatIfToggle({ whatIf, setWhatIf, className, compact }: { whatIf: boolean; setWhatIf: (v: boolean) => void; className?: string; compact?: boolean }) {
+  const knob = (
+    <span className={cx("relative h-5 w-9 shrink-0 rounded-full transition", whatIf ? "bg-warn" : "bg-line-strong")}>
+      <span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all", whatIf ? "left-[18px]" : "left-0.5")} />
+    </span>
+  );
+  if (compact)
+    return (
+      <button
+        onClick={() => setWhatIf(!whatIf)}
+        role="switch"
+        aria-checked={whatIf}
+        aria-label="What-if mode: simulate courses and grades"
+        className={cx(
+          "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full border pr-1.5 pl-3 text-meta font-medium transition",
+          whatIf ? "border-warn/60 bg-warn-soft text-warn" : "border-line bg-panel text-muted",
+          className,
+        )}
+      >
+        <Sparkles size={14} /> What-if {knob}
+      </button>
+    );
   return (
     <button
       onClick={() => setWhatIf(!whatIf)}
       className={cx(
-        "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left text-[13px] transition",
+        "flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left text-body-sm transition",
         whatIf ? "border-warn/60 bg-warn-soft text-warn" : "border-line bg-panel text-muted hover:text-ink",
         className,
       )}
       role="switch"
       aria-checked={whatIf}
+      aria-label="What-if mode: simulate courses and grades"
     >
       <Sparkles size={16} />
       <span className="flex-1">
         <span className="block font-medium">What-if mode</span>
-        <span className="block text-[11.5px] opacity-80">Simulate courses and grades</span>
+        <span className="block text-caption opacity-80">Simulate courses and grades</span>
       </span>
-      <span className={cx("relative h-5 w-9 rounded-full transition", whatIf ? "bg-warn" : "bg-line-strong")}>
-        <span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all", whatIf ? "left-[18px]" : "left-0.5")} />
-      </span>
+      {knob}
     </button>
   );
 }
@@ -523,7 +546,7 @@ function Footer({ visits, usage }: { visits: number | null; usage: number }) {
   const { catalog } = useTracker();
   const updated = catalog.lastModified ? new Date(catalog.lastModified) : null;
   return (
-    <footer className="no-print mt-12 grid gap-2 border-t border-line pt-6 text-[12px] leading-relaxed text-faint">
+    <footer className="no-print mt-12 grid gap-2 border-t border-line pt-6 text-meta leading-relaxed text-faint">
       <p>
         Data is saved locally in this browser only. Clearing your browser's cookies or site data will delete it, so back up regularly from the Data menu.
       </p>

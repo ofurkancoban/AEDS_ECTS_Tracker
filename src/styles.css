@@ -68,6 +68,19 @@
   --font-serif: "Fraunces Variable", "Iowan Old Style", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* Type scale: every font size in the app comes from these steps. */
+  --text-micro: 10.5px;
+  --text-caption: 11.5px;
+  --text-meta: 12.5px;
+  --text-body-sm: 13.5px;
+  --text-body: 14.5px;
+  --text-title-sm: 16px;
+  --text-title: 18px;
+  --text-display-sm: 22px;
+  --text-display: 28px;
+  --text-display-lg: 34px;
+  --text-hero: 44px;
+
   --color-ink: var(--ink);
   --color-paper: var(--paper);
   --color-panel: var(--panel);
@@ -315,5 +328,82 @@ select.field {
 @media print {
   .no-print {
     display: none !important;
+  }
+}
+
+/* View transitions between tabs (Chromium, Safari 18+). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.22s;
+  animation-timing-function: ease;
+}
+::view-transition-old(root) {
+  animation-name: vt-out;
+}
+::view-transition-new(root) {
+  animation-name: vt-in;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Graduation celebration (see components/Celebration.tsx). */
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift, 0), 105vh, 0) rotate(var(--spin, 540deg));
+    opacity: 0.9;
+  }
+}
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  z-index: 9950;
+  pointer-events: none;
+  animation: confetti-fall var(--dur, 2.6s) cubic-bezier(0.2, 0.6, 0.4, 1) var(--delay, 0s) forwards;
+}
+
+/* Compact density: tighter course rows, cards and lists. */
+[data-density="compact"] .density-row {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+[data-density="compact"] .density-card {
+  padding: 8px 10px !important;
+}
+[data-density="compact"] .density-gap {
+  gap: 2px !important;
+}
+
+/* Respect the system setting: no motion beyond what's needed. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .confetti-piece {
+    display: none;
   }
 }

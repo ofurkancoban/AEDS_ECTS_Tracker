@@ -41,14 +41,14 @@ export function OpenPanel() {
             <CalendarRange size={18} />
           </span>
           <span className="min-w-0">
-            <span className="block font-serif text-[17px] font-semibold">Open this semester</span>
-            <span className="block text-[12.5px] text-muted">
+            <span className="block font-serif text-title font-semibold">Open this semester</span>
+            <span className="block text-meta text-muted">
               {total} module{total === 1 ? "" : "s"} you haven't added yet · drag one into a category or tap to add
             </span>
           </span>
           <ChevronDown size={18} className={cx("ml-auto shrink-0 text-faint transition", !collapsed && "rotate-180")} />
         </button>
-        <select className="field h-9 !py-0 !text-[13px]" value={semester} onChange={(e) => setSemester(e.target.value)} aria-label="Semester">
+        <select className="field h-9 !py-0 !text-body-sm" value={semester} onChange={(e) => setSemester(e.target.value)} aria-label="Semester">
           {(options.includes(semester) ? options : [semester, ...options]).map((s) => (
             <option key={s}>{s}</option>
           ))}
@@ -56,10 +56,10 @@ export function OpenPanel() {
       </div>
       {!collapsed && (
         <div className="rise grid grid-cols-1 gap-4 border-t border-line px-5 py-4">
-          {groups.length === 0 && <div className="text-[13.5px] text-muted">Nothing left to add for {semester}.</div>}
+          {groups.length === 0 && <div className="text-body-sm text-muted">Nothing left to add for {semester}.</div>}
           {groups.map((g) => (
             <div key={g.id}>
-              <div className="mb-2 flex items-center gap-2 text-[12.5px] font-semibold text-muted">
+              <div className="mb-2 flex items-center gap-2 text-meta font-semibold text-muted">
                 <CategoryDot id={g.id} /> {g.name}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -73,7 +73,7 @@ export function OpenPanel() {
                       onClick={() => openAdd({ name: o.label, category: g.id, semester })}
                       title={o.compulsory ? `Compulsory: drag to ${g.name} only` : `Drag to ${g.name} or Specialization`}
                       className={cx(
-                        "group/chip inline-flex max-w-full cursor-grab items-center gap-2 rounded-xl border bg-panel py-1.5 pr-2 pl-1.5 text-left text-[12.5px] transition hover:-translate-y-px hover:shadow-[var(--shadow)] active:cursor-grabbing",
+                        "group/chip inline-flex max-w-full cursor-grab items-center gap-2 rounded-xl border bg-panel py-1.5 pr-2 pl-1.5 text-left text-meta transition hover:-translate-y-px hover:shadow-[var(--shadow)] active:cursor-grabbing",
                         o.compulsory ? "border-accent/40" : "border-line",
                       )}
                     >

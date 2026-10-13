@@ -89,7 +89,7 @@ export function Catalog() {
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={cx(
-              "inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border px-3.5 text-[13.5px] font-medium transition",
+              "inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border px-3.5 text-body-sm font-medium transition",
               showFilters || activeFilters ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel text-ink",
             )}
           >
@@ -104,7 +104,7 @@ export function Catalog() {
             key={id}
             onClick={() => setCat(id)}
             className={cx(
-              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium transition",
+              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-meta font-medium transition",
               cat === id ? "border-ink bg-ink text-paper" : "border-line bg-panel text-muted hover:text-ink",
             )}
           >
@@ -136,7 +136,7 @@ export function Catalog() {
           </label>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <span className="eyebrow">Show</span>
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px]">
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-body-sm">
               <Check2 checked={openNow} onChange={setOpenNow}>
                 Open in {plan}
               </Check2>
@@ -151,7 +151,7 @@ export function Catalog() {
         </div>
       )}
 
-      <div className="text-[12.5px] text-muted">
+      <div className="text-meta text-muted">
         {list.length} of {catalog.courses.length} modules
       </div>
 
@@ -206,7 +206,7 @@ function ModuleCard({
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="num text-[12px] font-semibold text-muted">{c.code}</span>
+            <span className="num text-meta font-semibold text-muted">{c.code}</span>
             <CategoryTag id={c.category} />
             {c.compulsory && <Badge tone="accent">compulsory</Badge>}
             {openNow && <Badge tone="warn">open {plan}</Badge>}
@@ -216,7 +216,7 @@ function ModuleCard({
               </Badge>
             )}
           </div>
-          <h3 className="mt-1.5 font-serif text-[16.5px] leading-snug font-semibold">{c.name}</h3>
+          <h3 className="mt-1.5 font-serif text-title-sm leading-snug font-semibold">{c.name}</h3>
         </div>
         <button
           onClick={onAdd}
@@ -228,7 +228,7 @@ function ModuleCard({
         </button>
       </div>
 
-      <div className="mt-3 grid gap-1.5 text-[12.5px] text-muted">
+      <div className="mt-3 grid gap-1.5 text-meta text-muted">
         {c.professor && <Row icon={<User size={13} />}>{c.professor}</Row>}
         <Row icon={<Languages size={13} />}>
           {c.language || "English"} · <span className="num">{c.ects} ECTS</span>
@@ -245,20 +245,20 @@ function ModuleCard({
       <div className="mt-3 flex items-center gap-3">
         <Difficulty value={rating} votes={votes} />
         <span className="flex-1" />
-        <button onClick={() => setMore((m) => !m)} className="inline-flex cursor-pointer items-center gap-1 text-[12.5px] font-medium text-muted hover:text-ink">
+        <button onClick={() => setMore((m) => !m)} className="inline-flex cursor-pointer items-center gap-1 text-meta font-medium text-muted hover:text-ink">
           Details <ChevronDown size={14} className={cx("transition", more && "rotate-180")} />
         </button>
       </div>
 
       {more && (
-        <div className="rise mt-3 grid gap-3 border-t border-line pt-3 text-[12.5px]">
+        <div className="rise mt-3 grid gap-3 border-t border-line pt-3 text-meta">
           {prior && <p className="rounded-lg bg-ink/5 px-2.5 py-1.5 text-muted">{prior}</p>}
           {offered.length > 0 && (
             <div>
               <div className="eyebrow mb-1.5">Offered in</div>
               <div className="flex flex-wrap gap-1">
                 {offered.map((s) => (
-                  <span key={s} className="num rounded-md bg-ink/5 px-1.5 py-0.5 text-[11px] text-muted">
+                  <span key={s} className="num rounded-md bg-ink/5 px-1.5 py-0.5 text-caption text-muted">
                     {s}
                   </span>
                 ))}
@@ -289,12 +289,12 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
 function Difficulty({ value, votes }: { value: number | null; votes: number }) {
   if (value === null)
     return (
-      <span className="inline-flex items-center gap-1.5 text-[12px] text-faint">
+      <span className="inline-flex items-center gap-1.5 text-meta text-faint">
         <Sparkles size={12} /> No difficulty votes yet
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-2 text-[12px] text-muted" title="Anonymous ratings from other students using this app">
+    <span className="inline-flex items-center gap-2 text-meta text-muted" title="Anonymous ratings from other students using this app">
       <span className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((n) => (
           <span key={n} className={cx("h-2 w-2 rounded-full", n <= Math.round(value) ? "bg-warn" : "bg-line-strong")} />

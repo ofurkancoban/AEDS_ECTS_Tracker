@@ -1,10 +1,10 @@
-import { Check, Moon, Sun } from "lucide-react";
+import { Check, Moon, Rows3, Rows4, Sun } from "lucide-react";
 import { PALETTES, type Palette } from "../lib/palettes";
 import { useTracker } from "../state";
 import { Modal, cx } from "./ui";
 
 export function AppearanceModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { state, patch, palette, setPalette } = useTracker();
+  const { state, patch, palette, setPalette, density, setDensity } = useTracker();
   const mode = state.theme;
   return (
     <Modal open={open} onClose={onClose} title="Appearance" subtitle="Saved on this device. Your course data is not affected." width="max-w-2xl">
@@ -15,12 +15,31 @@ export function AppearanceModal({ open, onClose }: { open: boolean; onClose: () 
             key={m}
             onClick={() => patch({ theme: m })}
             className={cx(
-              "inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg text-[13px] font-medium transition",
+              "inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg text-body-sm font-medium transition",
               mode === m ? "bg-ink text-paper" : "text-muted hover:text-ink",
             )}
           >
             {m === "light" ? <Sun size={15} /> : <Moon size={15} />}
             {m === "light" ? "Light" : "Dark"}
+          </button>
+        ))}
+      </div>
+
+      <div className="eyebrow mb-2">Density</div>
+      <div className="mb-5 flex w-full max-w-xs rounded-xl border border-line p-1" role="radiogroup" aria-label="Density">
+        {(["comfortable", "compact"] as const).map((d) => (
+          <button
+            key={d}
+            role="radio"
+            aria-checked={density === d}
+            onClick={() => setDensity(d)}
+            className={cx(
+              "inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg text-body-sm font-medium transition",
+              density === d ? "bg-ink text-paper" : "text-muted hover:text-ink",
+            )}
+          >
+            {d === "comfortable" ? <Rows3 size={15} /> : <Rows4 size={15} />}
+            {d === "comfortable" ? "Comfortable" : "Compact"}
           </button>
         ))}
       </div>
@@ -75,8 +94,8 @@ function PaletteCard({ p, mode, selected, onSelect }: { p: Palette; mode: "light
         )}
       </div>
       <div className="border-t border-line bg-panel px-3 py-2">
-        <div className="text-[13.5px] font-semibold">{p.name}</div>
-        <div className="truncate text-[11.5px] text-muted">{p.description}</div>
+        <div className="text-body-sm font-semibold">{p.name}</div>
+        <div className="truncate text-caption text-muted">{p.description}</div>
       </div>
     </button>
   );

@@ -1,7 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { migrateCourseNames, useCatalog } from "./lib/catalog";
 import { computeStats, type Stats } from "./lib/stats";
+import { updateFavicon } from "./components/Logo";
 import { PALETTE_KEY, applyPalette, loadPalette } from "./lib/palettes";
+import { DENSITY_KEY, applyDensity, loadDensity, prefersReducedMotion, type Density } from "./lib/preferences";
+import { flushSync } from "react-dom";
 import { loadState, readFlag, saveState, writeFlag } from "./lib/storage";
 import type { Catalog } from "./lib/catalog";
 import type { Course, TrackerState } from "./lib/types";
@@ -45,6 +48,8 @@ interface TrackerCtx {
   clearHypothetical: () => void;
   palette: string;
   setPalette: (id: string) => void;
+  density: Density;
+  setDensity: (d: Density) => void;
   view: View;
   setView: (v: View) => void;
   toasts: Toast[];
@@ -87,6 +92,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   });
   const [whatIf, setWhatIfRaw] = useState(false);
   const [palette, setPaletteRaw] = useState(loadPalette);
+  const [density, setDensityRaw] = useState<Density>(loadDensity);
   const [view, setViewRaw] = useState<View>(() => (readFlag(VIEW_KEY) as View) || "overview");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
@@ -147,6 +153,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", state.theme === "dark");
     applyPalette(palette);
+    updateFavicon();
     const meta = document.querySelector('meta[name="theme-color"]');
     const paper = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim();
     if (meta && paper) meta.setAttribute("content", paper);
@@ -155,6 +162,12 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   const setPalette = useCallback((id: string) => {
     setPaletteRaw(id);
     writeFlag(PALETTE_KEY, id);
+  }, []);
+
+  useEffect(() => applyDensity(density), [density]);
+  const setDensity = useCallback((d: Density) => {
+    setDensityRaw(d);
+    writeFlag(DENSITY_KEY, d);
   }, []);
 
   const syncCounts = () => {
@@ -255,7 +268,10 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
   }, [setCourses, toast]);
 
   const setView = useCallback((v: View) => {
-    setViewRaw(v);
+    // Cross-fade between views where the browser supports it.
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    if (doc.startViewTransition && !prefersReducedMotion()) doc.startViewTransition(() => flushSync(() => setViewRaw(v)));
+    else setViewRaw(v);
     writeFlag(VIEW_KEY, v);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -316,6 +332,8 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     clearHypothetical,
     palette,
     setPalette,
+    density,
+    setDensity,
     view,
     setView,
     toasts,

@@ -20,7 +20,7 @@ export function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: "sm" | "md" }) {
   const base =
     "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap cursor-pointer";
-  const sizes = size === "sm" ? "h-8 px-3 text-[13px]" : "h-10 px-4 text-sm";
+  const sizes = size === "sm" ? "h-8 px-3 text-body-sm" : "h-10 px-4 text-body";
   const variants: Record<Variant, string> = {
     primary: "bg-accent text-white dark:text-paper hover:brightness-110 shadow-[0_6px_16px_-8px_var(--accent)]",
     ghost: "text-muted hover:text-ink hover:bg-ink/5",
@@ -101,8 +101,8 @@ export function Modal({
         {title && (
           <div className="flex items-start gap-3 px-6 pt-5 pb-3">
             <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="font-serif text-xl font-semibold tracking-tight">{title}</h2>
-              {subtitle && <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>}
+              <h2 id={titleId} className="font-serif text-display-sm font-semibold tracking-tight">{title}</h2>
+              {subtitle && <p className="mt-0.5 text-body-sm text-muted">{subtitle}</p>}
             </div>
             <IconButton label="Close" onClick={onClose} className="-mr-2 -mt-1">
               <X size={18} />
@@ -182,14 +182,14 @@ export function MenuItem({
       disabled={disabled}
       onClick={onClick}
       className={cx(
-        "flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left text-[13.5px] transition disabled:cursor-default disabled:opacity-40",
+        "flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left text-body-sm transition disabled:cursor-default disabled:opacity-40",
         danger ? "text-danger hover:bg-danger-soft" : "text-ink hover:bg-ink/5",
       )}
     >
       {icon && <span className={cx("shrink-0", danger ? "" : "text-muted")}>{icon}</span>}
       <span className="min-w-0 flex-1">
         {children}
-        {hint && <span className="block text-[11.5px] text-muted">{hint}</span>}
+        {hint && <span className="block text-caption text-muted">{hint}</span>}
       </span>
     </button>
   );
@@ -210,7 +210,7 @@ export function CategoryDot({ id, size = 8 }: { id: CategoryId; size?: number })
 export function CategoryTag({ id }: { id: CategoryId }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold tracking-wide"
+      className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-micro font-semibold tracking-wide"
       style={{ color: `var(--cat-${id})`, background: `color-mix(in oklab, var(--cat-${id}) 12%, transparent)` }}
     >
       {categoryById(id).short}
@@ -232,7 +232,7 @@ export function StatusPill({ status, onClick }: { status: Status; onClick?: () =
       onClick={onClick}
       title={onClick ? "Click to change status" : undefined}
       className={cx(
-        "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium",
+        "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-caption font-medium",
         STATUS_STYLE[status],
         onClick && "cursor-pointer transition hover:brightness-95 dark:hover:brightness-125",
       )}
@@ -256,7 +256,7 @@ export function Badge({ children, tone = "muted", title }: { children: ReactNode
     danger: "bg-danger-soft text-danger",
   };
   return (
-    <span title={title} className={cx("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold", tones[tone])}>
+    <span title={title} className={cx("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-micro font-semibold", tones[tone])}>
       {children}
     </span>
   );
@@ -267,7 +267,7 @@ export function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; tit
     <div className="mb-3 flex items-end justify-between gap-3">
       <div>
         {eyebrow && <div className="eyebrow mb-0.5">{eyebrow}</div>}
-        <h3 className="font-serif text-lg font-semibold tracking-tight">{title}</h3>
+        <h3 className="font-serif text-title font-semibold tracking-tight">{title}</h3>
       </div>
       {action}
     </div>
@@ -301,7 +301,7 @@ export function Toasts() {
         <div
           key={t.id}
           className={cx(
-            "pop pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl px-4 py-2.5 text-[13.5px] shadow-[var(--shadow-lg)]",
+            "pop pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl px-4 py-2.5 text-body-sm shadow-[var(--shadow-lg)]",
             t.tone === "warn" ? "bg-warn text-white" : "bg-ink text-paper",
           )}
         >
@@ -343,7 +343,7 @@ export function ConfirmDialog() {
         </>
       }
     >
-      <div className="text-[14px] leading-relaxed text-muted">{r?.body}</div>
+      <div className="text-body leading-relaxed text-muted">{r?.body}</div>
     </Modal>
   );
 }
@@ -352,8 +352,8 @@ export function Empty({ icon, title, children }: { icon: ReactNode; title: strin
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">{icon}</div>
-      <div className="font-serif text-lg font-semibold">{title}</div>
-      {children && <div className="mt-1 max-w-sm text-[13.5px] text-muted">{children}</div>}
+      <div className="font-serif text-title font-semibold">{title}</div>
+      {children && <div className="mt-1 max-w-sm text-body-sm text-muted">{children}</div>}
     </div>
   );
 }

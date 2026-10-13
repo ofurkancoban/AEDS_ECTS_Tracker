@@ -221,10 +221,10 @@ export function ShareModal({ share, onClose }: { share: ShareState | null; onClo
           <canvas ref={canvasRef} className="h-auto w-full max-w-[260px] [image-rendering:pixelated]" />
         </div>
       ) : (
-        <div className="rounded-xl bg-warn-soft px-3 py-2 text-[13px] text-warn">{share?.error}</div>
+        <div className="rounded-xl bg-warn-soft px-3 py-2 text-body-sm text-warn">{share?.error}</div>
       )}
       <div className="mt-4 flex items-center gap-2">
-        <input readOnly value={share?.payload || ""} className="field num min-w-0 flex-1 !text-[12px]" onFocus={(e) => e.target.select()} />
+        <input readOnly value={share?.payload || ""} className="field num min-w-0 flex-1 !text-meta" onFocus={(e) => e.target.select()} />
         <Button
           variant="soft"
           onClick={() => {
@@ -313,10 +313,10 @@ export function HowItWorksModal({ open, onClose }: { open: boolean; onClose: () 
       <div className="grid gap-4">
         {HOW_IT_WORKS.map((s, i) => (
           <div key={s.title} className="flex gap-3">
-            <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[11px] font-bold text-accent">{i + 1}</span>
+            <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-caption font-bold text-accent">{i + 1}</span>
             <div>
               <div className="font-semibold">{s.title}</div>
-              <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">{s.body}</p>
+              <p className="mt-0.5 text-body-sm leading-relaxed text-muted">{s.body}</p>
             </div>
           </div>
         ))}
@@ -368,8 +368,8 @@ export function ChangelogModal({ open, onClose, entries }: { open: boolean; onCl
         {entries.slice(0, 8).map((e, i) => (
           <div key={e.version} className="relative">
             <span className={`absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-panel ${i === 0 ? "bg-accent" : "bg-line-strong"}`} />
-            <div className="num text-[12px] font-semibold text-muted">{e.version}</div>
-            <ul className="mt-1.5 list-disc space-y-1.5 pl-5 text-[13.5px] leading-relaxed marker:text-accent">
+            <div className="num text-meta font-semibold text-muted">{e.version}</div>
+            <ul className="mt-1.5 list-disc space-y-1.5 pl-5 text-body-sm leading-relaxed marker:text-accent">
               {e.items.map((it, j) => (
                 <li key={j}>{it}</li>
               ))}
@@ -396,7 +396,7 @@ function BackupsModal({
   const ids = new Set(current.map((c) => c.id));
   return (
     <Modal open={!!backups} onClose={onClose} title="Automatic backups" subtitle="Earlier versions of your course list saved in this browser. Restoring can be undone." width="max-w-lg">
-      {backups && backups.length === 0 && <p className="text-[13.5px] text-muted">No automatic backup yet. One is kept each time your course list changes.</p>}
+      {backups && backups.length === 0 && <p className="text-body-sm text-muted">No automatic backup yet. One is kept each time your course list changes.</p>}
       <ul className="grid grid-cols-1 gap-2">
         {(backups || []).map((b) => {
           const theirs = new Set(b.courses.map((c) => c.id));
@@ -405,8 +405,8 @@ function BackupsModal({
           return (
             <li key={b.t} className="flex items-center gap-3 rounded-xl border border-line px-3 py-2.5">
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">{new Date(b.t).toLocaleString()}</div>
-                <div className="text-[12px] text-muted">
+                <div className="text-body-sm font-medium">{new Date(b.t).toLocaleString()}</div>
+                <div className="text-meta text-muted">
                   {b.courses.length} course{b.courses.length === 1 ? "" : "s"}
                   {added || removed ? ` · brings back ${added}, drops ${removed}` : " · same courses, other details differ"}
                 </div>

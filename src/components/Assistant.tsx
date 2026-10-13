@@ -158,7 +158,7 @@ export default function Assistant() {
       >
         <header className="flex shrink-0 items-center gap-2 bg-accent px-4 pt-[calc(12px+env(safe-area-inset-top))] pb-3 text-white sm:pt-3 dark:text-paper">
           <MessageCircle size={18} />
-          <span className="font-serif text-[16px] font-semibold">AEDS AI Assistant</span>
+          <span className="font-serif text-title-sm font-semibold">AEDS AI Assistant</span>
           <a href={AEDS_RAG_WEB} target="_blank" rel="noopener noreferrer" title="Open in a new tab" aria-label="Open AEDS AI Assistant in a new tab" className="opacity-75 hover:opacity-100">
             <ExternalLink size={14} />
           </a>
@@ -178,7 +178,7 @@ export default function Assistant() {
           {!messages.length && (
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTIONS.map((q) => (
-                <button key={q} onClick={() => send(q)} className="cursor-pointer rounded-full border border-line bg-panel px-3 py-1.5 text-left text-[12.5px] transition hover:border-accent hover:text-accent">
+                <button key={q} onClick={() => send(q)} className="cursor-pointer rounded-full border border-line bg-panel px-3 py-1.5 text-left text-meta transition hover:border-accent hover:text-accent">
                   {q}
                 </button>
               ))}
@@ -194,7 +194,7 @@ export default function Assistant() {
         </div>
 
         <div className="shrink-0 border-t border-line bg-panel px-3 pt-2 pb-[calc(10px+env(safe-area-inset-bottom))]">
-          <label className="mb-1.5 flex w-fit cursor-pointer items-center gap-2 text-[11.5px] text-muted select-none">
+          <label className="mb-1.5 flex w-fit cursor-pointer items-center gap-2 text-caption text-muted select-none">
             <input
               type="checkbox"
               checked={include}
@@ -219,7 +219,7 @@ export default function Assistant() {
                 }
               }}
               placeholder="Ask about the AEDS programme..."
-              className="max-h-[100px] min-w-0 flex-1 resize-none bg-transparent py-1.5 text-[16px] leading-snug outline-none placeholder:text-faint sm:text-[14.5px]"
+              className="max-h-[100px] min-w-0 flex-1 resize-none bg-transparent py-1.5 text-title-sm leading-snug outline-none placeholder:text-faint sm:text-body"
             />
             <button
               onClick={() => send()}
@@ -235,12 +235,12 @@ export default function Assistant() {
         {confirmClear && (
           <div className="fade absolute inset-0 z-20 flex items-center justify-center bg-[#1c2333]/45 p-5">
             <div className="pop w-full max-w-[290px] rounded-2xl bg-panel p-4 shadow-[var(--shadow-lg)]">
-              <p className="mb-4 text-[14px] leading-relaxed">Clear this chat history? This cannot be undone.</p>
+              <p className="mb-4 text-body leading-relaxed">Clear this chat history? This cannot be undone.</p>
               <div className="flex justify-end gap-2">
-                <button onClick={() => setConfirmClear(false)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px]">
+                <button onClick={() => setConfirmClear(false)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-body-sm">
                   Cancel
                 </button>
-                <button onClick={clear} className="cursor-pointer rounded-lg bg-warn px-3 py-1.5 text-[13px] font-semibold text-white">
+                <button onClick={clear} className="cursor-pointer rounded-lg bg-warn px-3 py-1.5 text-body-sm font-semibold text-white">
                   Clear
                 </button>
               </div>
@@ -257,11 +257,11 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<number | null>(null);
   const [showSources, setShowSources] = useState(false);
-  if (msg.role === "system") return <div className="rise self-start px-1 text-[12.5px] text-warn italic">{msg.text}</div>;
+  if (msg.role === "system") return <div className="rise self-start px-1 text-meta text-warn italic">{msg.text}</div>;
   if (msg.role === "user")
     return (
       <div
-        className="rise max-w-[82%] self-end rounded-[20px] rounded-br-md border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"
+        className="rise max-w-[82%] self-end rounded-[20px] rounded-br-md border border-accent/30 bg-accent-soft px-3.5 py-2.5 text-body leading-relaxed whitespace-pre-wrap"
         dangerouslySetInnerHTML={{ __html: escapeHtml(msg.text) }}
       />
     );
@@ -289,16 +289,16 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
     setActive((a) => (a === n ? null : n));
   };
   return (
-    <div className={cx("rise relative max-w-[88%] self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-3.5 pt-2.5 text-[14px] leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.04)]", plain ? "pb-2.5" : "pb-7")}>
+    <div className={cx("rise relative max-w-[88%] self-start rounded-[20px] rounded-bl-md border border-line bg-panel px-3.5 pt-2.5 text-body leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.04)]", plain ? "pb-2.5" : "pb-7")}>
       <div className="md" data-active-cite={active ?? undefined} onClick={onAnswerClick} dangerouslySetInnerHTML={{ __html: formatAnswer(msg.text) }} />
 
       {cite && (
-        <div className="pop mt-2 rounded-xl border border-line bg-panel-2 p-3 text-[12.5px]" role="region" aria-label={`Source ${cite.n}`}>
+        <div className="pop mt-2 rounded-xl border border-line bg-panel-2 p-3 text-meta" role="region" aria-label={`Source ${cite.n}`}>
           <div className="flex items-start gap-2">
-            <span className="num mt-0.5 flex h-5 min-w-5 items-center justify-center rounded-md bg-accent px-1 text-[11px] font-bold text-white dark:text-paper">{cite.n}</span>
+            <span className="num mt-0.5 flex h-5 min-w-5 items-center justify-center rounded-md bg-accent px-1 text-caption font-bold text-white dark:text-paper">{cite.n}</span>
             <div className="min-w-0 flex-1">
               <div className="font-semibold">{cite.title}</div>
-              <div className="text-[11.5px] text-muted">
+              <div className="text-caption text-muted">
                 {cite.kind}
                 {cite.section ? ` · ${cite.section}` : ""}
               </div>
@@ -308,7 +308,7 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
             </button>
           </div>
           {cite.expiredSince && (
-            <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-warn-soft px-2 py-1 text-[11.5px] text-warn">
+            <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-warn-soft px-2 py-1 text-caption text-warn">
               <TriangleAlert size={12} /> Outdated since {cite.expiredSince}
             </div>
           )}
@@ -326,7 +326,7 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
           <button
             onClick={() => setShowSources((v) => !v)}
             aria-expanded={showSources}
-            className="inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-muted hover:text-ink"
+            className="inline-flex cursor-pointer items-center gap-1.5 text-meta font-medium text-muted hover:text-ink"
           >
             <BookOpen size={13} /> Sources ({sources.length})
             <ChevronDown size={13} className={cx("transition", showSources && "rotate-180")} />
@@ -334,7 +334,7 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
           {showSources && (
             <ul className="mt-1.5 grid gap-1.5 pb-1">
               {sources.map((g) => (
-                <li key={g.id} className="text-[12px] leading-snug">
+                <li key={g.id} className="text-meta leading-snug">
                   {g.url ? (
                     <a href={g.url} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline">
                       {g.title}
@@ -347,7 +347,7 @@ function Bubble({ msg, onRate, plain }: { msg: ChatMessage; onRate: (r: 1 | -1) 
                     · {g.kind}
                     {g.pages.length ? ` · p. ${g.pages.join(", ")}` : ""}
                   </span>
-                  {g.expiredSince && <span className="ml-1 rounded bg-warn-soft px-1 text-[10.5px] text-warn">outdated since {g.expiredSince}</span>}
+                  {g.expiredSince && <span className="ml-1 rounded bg-warn-soft px-1 text-micro text-warn">outdated since {g.expiredSince}</span>}
                 </li>
               ))}
             </ul>

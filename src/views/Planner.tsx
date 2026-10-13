@@ -74,7 +74,7 @@ export function Planner() {
                       key={o}
                       onClick={() => setOption(o)}
                       className={cx(
-                        "h-7 cursor-pointer rounded-lg px-3 text-[12.5px] font-semibold transition",
+                        "h-7 cursor-pointer rounded-lg px-3 text-meta font-semibold transition",
                         option === o ? "bg-ink text-paper" : "text-muted hover:text-ink",
                       )}
                     >
@@ -85,17 +85,17 @@ export function Planner() {
               )
             }
           />
-          <p className="mb-4 text-[13px] leading-relaxed text-muted">
+          <p className="mb-4 text-body-sm leading-relaxed text-muted">
             Up to {MAX_ECTS_PER_SEMESTER} ECTS, missing compulsory modules first, then electives for the categories that still need credits.
             {!sameAB && " Option B picks from the other end of the catalog for variety."}
           </p>
           {items.length ? (
             <PlanList items={items} taken={taken} />
           ) : (
-            <p className="text-[13.5px] text-muted">Nothing suitable is offered in {next.semester} for your remaining requirements.</p>
+            <p className="text-body-sm text-muted">Nothing suitable is offered in {next.semester} for your remaining requirements.</p>
           )}
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
-            <span className="num text-[13px] text-muted">
+            <span className="num text-body-sm text-muted">
               <span className={cx("font-semibold", sum > MAX_ECTS_PER_SEMESTER ? "text-warn" : "text-ink")}>{sum}</span> ECTS
             </span>
             <Button variant="primary" size="sm" disabled={!items.some((i) => !i.already)} onClick={() => addItems(items, next.semester)}>
@@ -108,7 +108,7 @@ export function Planner() {
       {path && (
         <section className="card p-5 lg:col-span-3">
           <SectionTitle eyebrow="Simulation" title="Your path to graduation" />
-          <p className="mb-5 flex items-start gap-2 text-[13px] leading-relaxed text-muted">
+          <p className="mb-5 flex items-start gap-2 text-body-sm leading-relaxed text-muted">
             <Route size={15} className="mt-0.5 shrink-0" />
             One possible schedule for everything still unplanned, based on when modules have run before.
             {path.anyPredicted && " Courses marked likely aren't confirmed for that semester yet."}
@@ -121,18 +121,18 @@ export function Planner() {
                 <li key={t.semester} className="relative">
                   <span
                     className={cx(
-                      "absolute top-0.5 -left-[35px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-panel text-[10px] font-bold",
+                      "absolute top-0.5 -left-[35px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-panel text-micro font-bold",
                       last ? "bg-accent text-white dark:text-paper" : "bg-ink text-paper",
                     )}
                   >
                     {last ? <Flag size={11} /> : i + 1}
                   </span>
                   <div className="mb-2 flex items-center gap-2">
-                    <h4 className="font-serif text-[16px] font-semibold">{t.semester}</h4>
-                    <span className="num text-[12px] text-muted">{ects} ECTS</span>
+                    <h4 className="font-serif text-title-sm font-semibold">{t.semester}</h4>
+                    <span className="num text-meta text-muted">{ects} ECTS</span>
                     <button
                       onClick={() => addItems(t.items, t.semester)}
-                      className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-accent hover:bg-accent-soft"
+                      className="ml-auto inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-meta font-medium text-accent hover:bg-accent-soft"
                     >
                       <CalendarPlus size={13} /> Plan
                     </button>
@@ -143,7 +143,7 @@ export function Planner() {
             })}
           </ol>
           {!path.finished && (
-            <p className="mt-5 flex items-start gap-2 rounded-xl bg-warn-soft px-3 py-2 text-[12.5px] text-warn">
+            <p className="mt-5 flex items-start gap-2 rounded-xl bg-warn-soft px-3 py-2 text-meta text-warn">
               <Info size={14} className="mt-0.5 shrink-0" />
               Not every requirement fits within the next {path.terms.length} semesters with the current offering data.
             </p>
@@ -167,9 +167,9 @@ function PlanList({ items, taken }: { items: PlanItem[]; taken: Set<string> }) {
             key={i.label}
             className={cx("flex items-center gap-3 rounded-xl border px-3 py-2", isTaken ? "border-transparent bg-ink/[0.03]" : "border-line bg-panel")}
           >
-            <span className="num w-12 shrink-0 text-[11.5px] font-semibold text-muted">{rest.length ? code : ""}</span>
+            <span className="num w-12 shrink-0 text-caption font-semibold text-muted">{rest.length ? code : ""}</span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13.5px]">{rest.length ? rest.join(" - ") : i.label}</span>
+              <span className="block truncate text-body-sm">{rest.length ? rest.join(" - ") : i.label}</span>
               <span className="mt-0.5 flex flex-wrap gap-1.5">
                 {i.category && <CategoryTag id={i.category} />}
                 {i.compulsory && <Badge tone="accent">compulsory</Badge>}
@@ -185,7 +185,7 @@ function PlanList({ items, taken }: { items: PlanItem[]; taken: Set<string> }) {
                 )}
               </span>
             </span>
-            <span className="num shrink-0 text-[12px] text-muted" title={i.category ? categoryById(i.category).name : undefined}>
+            <span className="num shrink-0 text-meta text-muted" title={i.category ? categoryById(i.category).name : undefined}>
               {i.ects}
             </span>
           </li>

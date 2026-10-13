@@ -108,7 +108,7 @@ export default function StudipSync({ open, onClose }: { open: boolean; onClose: 
           <Steps />
           <div>
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-[13.5px] font-semibold">4. Paste what you copied</span>
+              <span className="text-body-sm font-semibold">4. Paste what you copied</span>
               <Button size="sm" variant="soft" onClick={paste}>
                 <ClipboardPaste size={14} /> Paste from clipboard
               </Button>
@@ -117,9 +117,9 @@ export default function StudipSync({ open, onClose }: { open: boolean; onClose: 
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Paste the copied text here if the button above does not work"
-              className="field num min-h-28 w-full resize-y !text-[12px] leading-snug"
+              className="field num min-h-28 w-full resize-y !text-meta leading-snug"
             />
-            {error && <p className="mt-2 rounded-xl bg-warn-soft px-3 py-2 text-[12.5px] text-warn">{error}</p>}
+            {error && <p className="mt-2 rounded-xl bg-warn-soft px-3 py-2 text-meta text-warn">{error}</p>}
             <div className="mt-3 flex justify-end">
               <Button variant="primary" onClick={runMatch} disabled={!text.trim()}>
                 Match <ArrowRight size={15} />
@@ -147,7 +147,7 @@ export default function StudipSync({ open, onClose }: { open: boolean; onClose: 
 
 function Steps() {
   return (
-    <ol className="grid gap-3 text-[13.5px] leading-relaxed">
+    <ol className="grid gap-3 text-body-sm leading-relaxed">
       <li>
         <b>1.</b> Log in to{" "}
         <a className="font-medium text-accent hover:underline" href={STUDIP_URL} target="_blank" rel="noopener noreferrer">
@@ -164,7 +164,7 @@ function Steps() {
       </li>
       <li>
         <b>3.</b> Click <b>"Expand all"</b> if you see it, then press <b>Ctrl+A</b> / <b>Cmd+A</b> and copy (<b>Ctrl+C</b> / <b>Cmd+C</b>).
-        <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl bg-panel-2 px-3 py-2.5 text-[12.5px] text-muted">
+        <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl bg-panel-2 px-3 py-2.5 text-meta text-muted">
           <a
             ref={(el) => el?.setAttribute("href", BOOKMARKLET)}
             onClick={(e) => e.preventDefault()}
@@ -216,7 +216,7 @@ function Results({
   return (
     <div className="grid gap-5">
       {nothing && (
-        <div className="flex items-center gap-3 rounded-2xl bg-accent-soft px-4 py-3 text-[13.5px] text-accent">
+        <div className="flex items-center gap-3 rounded-2xl bg-accent-soft px-4 py-3 text-body-sm text-accent">
           <ListChecks size={18} /> Everything is already up to date.
         </div>
       )}
@@ -231,8 +231,8 @@ function Results({
                 onChange={() => toggle(skipUpdate, u.course.id, setSkipUpdate)}
                 className="accent-[var(--accent)]"
               />
-              <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{u.course.name}</span>
-              <span className="num shrink-0 text-[13px] text-muted">
+              <span className="min-w-0 flex-1 truncate text-body-sm font-medium">{u.course.name}</span>
+              <span className="num shrink-0 text-body-sm text-muted">
                 {u.course.grade || "-"} <span className="font-semibold text-accent">→ {u.newGrade}</span>
               </span>
             </label>
@@ -248,13 +248,13 @@ function Results({
               <div key={a.row.number} className={cx("rounded-xl border border-line bg-panel-2 px-3 py-2.5", !on && "opacity-50")}>
                 <label className="flex cursor-pointer items-start gap-3">
                   <input type="checkbox" checked={on} onChange={() => toggle(skipAdd, a.row.number, setSkipAdd)} className="mt-1 accent-[var(--accent)]" />
-                  <span className="min-w-0 flex-1 text-[13.5px] font-medium">{a.name}</span>
+                  <span className="min-w-0 flex-1 text-body-sm font-medium">{a.name}</span>
                 </label>
-                <div className="mt-2 flex flex-wrap items-center gap-2 pl-7 text-[12.5px] text-muted">
+                <div className="mt-2 flex flex-wrap items-center gap-2 pl-7 text-meta text-muted">
                   <CategoryTag id={a.category} />
-                  <span className="num rounded-md bg-accent px-1.5 py-0.5 text-[11px] font-semibold text-white dark:text-paper">Grade {a.row.grade}</span>
+                  <span className="num rounded-md bg-accent px-1.5 py-0.5 text-caption font-semibold text-white dark:text-paper">Grade {a.row.grade}</span>
                   <select
-                    className={cx("field ml-auto h-8 !py-0 !text-[12.5px]", on && !semesters[a.row.number] && "!border-warn")}
+                    className={cx("field ml-auto h-8 !py-0 !text-meta", on && !semesters[a.row.number] && "!border-warn")}
                     value={semesters[a.row.number] || ""}
                     onChange={(e) => setSemesters({ ...semesters, [a.row.number]: e.target.value })}
                     disabled={!on}
@@ -278,10 +278,10 @@ function Results({
         <Section title={`Needs review (${match.review.length}), pick the matching course or skip`} tone="warn">
           {match.review.map((r) => (
             <div key={r.number} className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-panel-2 px-3 py-2.5">
-              <span className="min-w-0 flex-1 text-[13.5px]">
+              <span className="min-w-0 flex-1 text-body-sm">
                 {r.title} <span className="num text-muted">({r.grade})</span>
               </span>
-              <select className="field h-8 max-w-[240px] !py-0 !text-[12.5px]" value={manual[r.number] || ""} onChange={(e) => setManual({ ...manual, [r.number]: e.target.value })}>
+              <select className="field h-8 max-w-[240px] !py-0 !text-meta" value={manual[r.number] || ""} onChange={(e) => setManual({ ...manual, [r.number]: e.target.value })}>
                 <option value="">Skip</option>
                 {courses.filter((c) => !c.hypothetical).map((c) => (
                   <option key={c.id} value={c.id}>
@@ -294,7 +294,7 @@ function Results({
         </Section>
       )}
 
-      <div className="flex items-center justify-between text-[12.5px] text-muted">
+      <div className="flex items-center justify-between text-meta text-muted">
         <span>{match.unchanged.length ? `${match.unchanged.length} already up to date.` : ""}</span>
         <button onClick={onBack} className="cursor-pointer font-medium text-accent hover:underline">
           Paste again
@@ -307,7 +307,7 @@ function Results({
 function Section({ title, tone = "accent", children }: { title: string; tone?: "accent" | "warn"; children: React.ReactNode }) {
   return (
     <section>
-      <h4 className={cx("mb-2 border-l-[3px] pl-2.5 text-[13px] font-semibold", tone === "warn" ? "border-warn text-warn" : "border-accent")}>{title}</h4>
+      <h4 className={cx("mb-2 border-l-[3px] pl-2.5 text-body-sm font-semibold", tone === "warn" ? "border-warn text-warn" : "border-accent")}>{title}</h4>
       <div className="grid grid-cols-1 gap-2">{children}</div>
     </section>
   );

@@ -55,7 +55,7 @@ export function GradeSimulator() {
           </div>
         }
       />
-      <p className="mb-4 text-[13px] text-muted">Pick the grade you expect for each open course. Nothing here changes your saved data.</p>
+      <p className="mb-4 text-body-sm text-muted">Pick the grade you expect for each open course. Nothing here changes your saved data.</p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_260px]">
         <div className="grid grid-cols-1 gap-1.5">
@@ -64,15 +64,15 @@ export function GradeSimulator() {
             return (
               <div key={c.id} className="flex items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px]">{restName.length ? restName.join(" - ") : c.name}</span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted">
+                  <span className="block truncate text-body-sm">{restName.length ? restName.join(" - ") : c.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
                     <CategoryTag id={c.category} />
                     <span className="num">{restName.length ? code : ""}</span>
                     <span className="num">{c.ects} ECTS</span>
                   </span>
                 </span>
                 <select
-                  className="field num h-8 !rounded-lg !py-0 !pl-2.5 !text-[13px] font-semibold"
+                  className="field num h-8 !rounded-lg !py-0 !pl-2.5 !text-body-sm font-semibold"
                   value={String(grades[c.id] ?? baseline)}
                   onChange={(e) => setGrades({ ...grades, [c.id]: parseFloat(e.target.value) })}
                   aria-label={`Expected grade for ${c.name}`}
@@ -88,7 +88,7 @@ export function GradeSimulator() {
           })}
           {rest > 0 && (
             <div className="rounded-xl border border-dashed border-line-strong px-3 py-2.5">
-              <div className="flex items-center justify-between text-[13.5px]">
+              <div className="flex items-center justify-between text-body-sm">
                 <span>
                   Not planned yet <span className="num text-muted">({rest} ECTS)</span>
                 </span>
@@ -113,13 +113,13 @@ export function GradeSimulator() {
           <div className="eyebrow mt-2">Projected final GPA</div>
           <div
             className={cx(
-              "num mt-1 text-[44px] leading-none font-semibold tracking-tight",
+              "num mt-1 text-hero leading-none font-semibold tracking-tight",
               target && projected ? (projected <= target + 1e-9 ? "text-accent" : "text-warn") : "",
             )}
           >
             {projected ? (Math.round(projected * 100) / 100).toFixed(2) : "-"}
           </div>
-          <div className="mt-3 grid w-full gap-1 text-[12.5px] text-muted">
+          <div className="mt-3 grid w-full gap-1 text-meta text-muted">
             <div className="flex justify-between">
               <span>Current GPA</span>
               <span className="num">{stats.gpa || "-"}</span>

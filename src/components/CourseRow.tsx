@@ -16,6 +16,7 @@ import { useState, type DragEvent } from "react";
 import { codeOf, offeringPattern, resolveCode, semesterOptionsFor } from "../lib/catalog";
 import { CATEGORIES, GRADES, MAX_ATTEMPTS, STATUSES, categoryById } from "../lib/constants";
 import { clearRating, difficultyLabel, myRating, submitRating, useRatings } from "../lib/ratings";
+import { gradeTone } from "../lib/grades";
 import { isFail } from "../lib/stats";
 import type { CategoryId, Course } from "../lib/types";
 import { useTracker } from "../state";
@@ -52,6 +53,7 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
   const title = dash > 0 && code ? course.name.slice(dash + 3) : course.name;
   const difficulty = code ? difficultyLabel(ratings[code]) : null;
   const moved = course.homeCategory && course.homeCategory !== course.category;
+  const tone = course.status === "completed" ? gradeTone(course.grade) : null;
 
   return (
     <div
@@ -63,7 +65,7 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
         course.hypothetical && "border-dashed !border-warn/60 bg-warn-soft/40",
       )}
     >
-      <div className={cx("flex items-center gap-3", compact ? "px-3 py-2" : "px-3.5 py-2.5")}>
+      <div className={cx("density-row flex items-center gap-3", compact ? "px-3 py-2" : "px-3.5 py-2.5")}>
         {/* A div, not a <button>: Chrome won't start a drag from inside a button. */}
         <div
           role="button"
@@ -80,28 +82,24 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
         >
           <span
             className={cx(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-bold uppercase num",
-              course.status === "completed" && !failed
-                ? "bg-accent-soft text-accent"
-                : failed
-                  ? "bg-danger-soft text-danger"
-                  : course.status === "in-progress"
-                    ? "bg-warn-soft text-warn"
-                    : "bg-ink/5 text-muted",
+              "num flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-micro font-bold uppercase",
+              !tone && (course.status === "in-progress" ? "bg-warn-soft text-warn" : course.status === "completed" ? "bg-accent-soft text-accent" : "bg-ink/5 text-muted"),
             )}
+            style={tone ? { background: tone.soft, color: tone.color } : undefined}
+            title={tone ? `Grade ${course.grade}` : undefined}
           >
-            {(code || "·").replace(/^([a-z]+)(\d+)$/, "$1​$2").slice(0, 7)}
+            {(code || "·").replace(/^([a-z]+)(\d+)$/, "$1\u200b$2").slice(0, 7)}
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
-              <span className="truncate text-[14px] font-medium">{title}</span>
+              <span className="truncate text-body font-medium">{title}</span>
               {course.hypothetical && (
                 <Badge tone="warn">
                   <Sparkles size={10} /> what-if
                 </Badge>
               )}
             </span>
-            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted">
               {showCategory && <CategoryTag id={course.category} />}
               <span>{course.semester}</span>
               <span className="text-faint">·</span>
@@ -123,11 +121,8 @@ export function CourseRow({ course, showCategory = false, compact = false }: { c
             <select
               value={course.grade}
               onChange={(e) => updateCourse(course.id, { grade: e.target.value })}
-              className={cx(
-                "field num h-8 !rounded-lg !py-0 !pl-2.5 !text-[13px] font-semibold",
-                !course.grade && "!border-warn/60 text-warn",
-                failed && "text-danger",
-              )}
+              className={cx("field num h-8 !rounded-lg !py-0 !pl-2.5 !text-body-sm font-semibold", !course.grade && "!border-warn/60 text-warn")}
+              style={tone ? { color: tone.color } : undefined}
               aria-label="Grade"
             >
               <option value="">grade</option>
@@ -281,7 +276,7 @@ function CourseDetails({ course, code, difficulty, whatIf }: { course: Course; c
           </select>
         </label>
         {(whatIf || course.hypothetical) && (
-          <label className="flex items-center gap-2 self-end pb-2 text-[13px]">
+          <label className="flex items-center gap-2 self-end pb-2 text-body-sm">
             <input
               type="checkbox"
               checked={!!course.hypothetical}
@@ -293,7 +288,7 @@ function CourseDetails({ course, code, difficulty, whatIf }: { course: Course; c
         )}
       </div>
 
-      <div className="mt-4 grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2">
+      <div className="mt-4 grid gap-x-6 gap-y-2 text-body-sm sm:grid-cols-2">
         {course.professor && <Info icon={<User size={14} />} label="Lecturer" value={course.professor} />}
         {course.examType && <Info icon={<GraduationCap size={14} />} label="Exam" value={course.examType} />}
         {course.language && <Info icon={<Languages size={14} />} label="Language" value={course.language} />}
@@ -313,7 +308,7 @@ function CourseDetails({ course, code, difficulty, whatIf }: { course: Course; c
       </div>
 
       {course.skills && (
-        <details className="mt-3 text-[13px]">
+        <details className="mt-3 text-body-sm">
           <summary className="cursor-pointer text-muted hover:text-ink">Learning outcomes</summary>
           <p className="mt-2 leading-relaxed text-muted">{course.skills}</p>
         </details>
@@ -337,7 +332,7 @@ function CourseDetails({ course, code, difficulty, whatIf }: { course: Course; c
             href={course.studipLink}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent hover:underline"
+            className="inline-flex items-center gap-1.5 text-body-sm font-medium text-accent hover:underline"
           >
             Module description <ExternalLink size={13} />
           </a>
@@ -362,7 +357,7 @@ function DifficultyRater({ code }: { code: string }) {
   const [hover, setHover] = useState(0);
   const shown = hover || mine;
   return (
-    <div className="flex items-center gap-2 text-[12.5px] text-muted" title="Anonymous, shared with other students using this app">
+    <div className="flex items-center gap-2 text-meta text-muted" title="Anonymous, shared with other students using this app">
       <span>How hard was it?</span>
       <div className="flex gap-1" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((n) => (

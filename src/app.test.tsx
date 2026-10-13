@@ -54,10 +54,24 @@ afterEach(() => {
 });
 
 describe("navigation", () => {
-  it("opens on the overview with nothing completed", async () => {
-    await renderApp();
+  it("welcomes a new user with three ways to start", async () => {
+    const { user } = await renderApp();
     expect(screen.getAllByRole("heading", { name: "Overview" }).length).toBeGreaterThan(0);
+    const welcome = screen.getByRole("region", { name: "Let's map out your master's" });
+    expect(within(welcome).getAllByRole("listitem")).toHaveLength(3);
+    await user.click(within(welcome).getByRole("button", { name: "Add a course" }));
+    expect(dialog("Add a course")).toBeTruthy();
+    press("Escape");
+    await user.click(within(welcome).getByRole("button", { name: "Start sync" }));
+    expect(await screen.findByRole("dialog", { name: "Sync grades from StudIP" })).toBeTruthy();
+  });
+
+  it("shows the dashboard instead once there are courses", async () => {
+    seed(sample());
+    await renderApp();
+    expect(screen.queryByRole("region", { name: "Let's map out your master's" })).toBeNull();
     expect(screen.getByText(/ECTS to go/)).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Credits and GPA by semester" })).toBeTruthy();
   });
 
   it("switches views with the number keys and remembers the last one", async () => {
@@ -523,5 +537,90 @@ describe("undo precision", () => {
     await renderApp();
     expect(screen.getByText("Graduation date passed")).toBeTruthy();
     expect(screen.getByText(/days ago/)).toBeTruthy();
+  });
+});
+
+describe("visual features", () => {
+  it("groups alerts in one panel, most severe first, with the rest on demand", async () => {
+    // A late graduation date, no backup, a missing grade and a compulsory course on its last run.
+    seed([...sample(), course("wir875", "empirical", "SoSe25", "completed", "")], { graduationDate: "2020-01-01" });
+    const { user } = await renderApp();
+    const panel = screen.getByRole("region", { name: "Needs attention" });
+    const items = () => within(panel).getAllByRole("listitem");
+    expect(items()).toHaveLength(2);
+    const toggle = within(panel).getByRole("button", { name: /Show all \d+/ });
+    const total = Number(toggle.textContent!.match(/\d+/)![0]);
+    expect(total).toBeGreaterThan(2);
+    await user.click(toggle);
+    expect(items()).toHaveLength(total);
+    // Danger (last chance) before warnings before muted notes.
+    const order = items().map((li) => (li.querySelector("span")!.className.match(/bg-(danger|warn|ink|accent)/) || [])[1]);
+    const rank = { danger: 0, warn: 1, ink: 2, accent: 3 } as Record<string, number>;
+    expect([...order].sort((a, b) => rank[a] - rank[b])).toEqual(order);
+  });
+
+  it("switches to compact density from Appearance", async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getAllByRole("button", { name: "Appearance" })[0]);
+    await user.click(within(dialog("Appearance")).getByRole("radio", { name: /Compact/ }));
+    expect(document.documentElement.getAttribute("data-density")).toBe("compact");
+    expect(localStorage.getItem("ects-tracker-density")).toBe("compact");
+  });
+
+  it("keeps the tab icon in the palette's colours", async () => {
+    const { user } = await renderApp();
+    const icon = () => document.querySelector<HTMLLinkElement>('link[rel="icon"][data-dynamic]');
+    await waitFor(() => expect(icon()).toBeTruthy());
+    const before = icon()!.href;
+    await user.click(screen.getAllByRole("button", { name: "Appearance" })[0]);
+    // happy-dom doesn't compute palette CSS, so check the mode switch here (palettes: see e2e).
+    await user.click(within(dialog("Appearance")).getByRole("button", { name: /^Dark$/ }));
+    await waitFor(() => expect(icon()!.href).not.toBe(before));
+    expect(decodeURIComponent(icon()!.href)).toContain("<svg");
+  });
+
+  it("collapses past semesters on the timeline and remembers it", async () => {
+    seed(sample());
+    const { user } = await renderApp();
+    press("3");
+    const strip = await screen.findByRole("navigation", { name: "Semesters" });
+    expect(screen.getByRole("region", { name: "SoSe24" })).toBeTruthy();
+    await user.click(within(strip).getByRole("button", { name: "Hide past" }));
+    expect(screen.queryByRole("region", { name: "SoSe24" })).toBeNull();
+    expect(localStorage.getItem("ects-tracker-past-collapsed")).toBe("1");
+    // Jumping to a hidden semester brings the past back.
+    await user.click(within(strip).getByRole("button", { name: /^SoSe24/ }));
+    expect(await screen.findByRole("region", { name: "SoSe24" })).toBeTruthy();
+  });
+
+  it("celebrates once when the last requirement is met", async () => {
+    const { ownPool, codeOf: code } = await import("./lib/catalog");
+    const { getCatalog } = await import("./lib/catalog");
+    const cat = getCatalog();
+    const full: Course[] = [];
+    const add = (id: Course["category"], need: number) => {
+      const pool = ownPool(id, cat).filter((l) => !full.some((c) => c.name === l));
+      const sorted = [...pool.filter((l) => cat.compulsory.includes(code(l) || "")), ...pool.filter((l) => !cat.compulsory.includes(code(l) || ""))];
+      let e = 0;
+      for (const l of sorted) {
+        if (e >= need) break;
+        full.push(course(l, id, "SoSe25", "completed", "1.7"));
+        e += id === "thesis" ? 30 : 6;
+      }
+    };
+    add("economics", 36);
+    add("empirical", 18);
+    add("datascience", 18);
+    add("specialization", 18);
+    add("thesis", 30);
+    const last = full[full.length - 1];
+    seed(full.map((c) => (c.id === last.id ? { ...c, status: "in-progress" as const, grade: "" } : c)));
+    const { user } = await renderApp();
+    press("2");
+    const row = (await screen.findAllByText(/Degree Module/))[0].closest(".group") as HTMLElement;
+    await user.click(within(row).getByTitle("Click to change status"));
+    expect(await screen.findByTestId("celebration")).toBeTruthy();
+    expect(screen.getByText("Every requirement is met. Congratulations!")).toBeTruthy();
+    expect(localStorage.getItem("ects-tracker-celebrated")).toBe("1");
   });
 });

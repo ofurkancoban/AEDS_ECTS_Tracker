@@ -3,30 +3,38 @@ import {
   ArrowRight,
   Award,
   CalendarClock,
+  ChevronDown,
   CircleAlert,
   Clock3,
   DatabaseBackup,
   Flag,
   PartyPopper,
+  Plus,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Target,
+  Upload,
   X,
 } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
-import { GpaTrend, GradeHistogram, ProgressRing } from "../components/Charts";
+import { useMemo, useState, type ReactNode } from "react";
+import { GradeHistogram, ProgressRing, SemesterChart } from "../components/Charts";
 import { OpenPanel } from "../components/OpenPanel";
 import { useCategoryDrop } from "../components/dnd";
 import { Bar, Button, CategoryDot, SectionTitle, cx } from "../components/ui";
 import { labelForCode } from "../lib/catalog";
 import { LECTURE_WEEKS, MAX_ECTS_PER_SEMESTER, TOTAL_REQUIRED } from "../lib/constants";
 import { lastChanceCourses, notOfferedAnymore } from "../lib/planning";
-import { planningSemester } from "../lib/semesters";
+import { compareSemesters, planningSemester } from "../lib/semesters";
+import { isFail } from "../lib/stats";
 import type { CategoryStats } from "../lib/stats";
+import { useMediaQuery } from "../lib/useMediaQuery";
 import { useTracker } from "../state";
 
-export function Overview({ onBackup }: { onBackup: () => void }) {
-  const { stats, state, courses, catalog, patch, setView, dismissBackupReminder } = useTracker();
+export function Overview({ onBackup, onImport }: { onBackup: () => void; onImport: () => void }) {
+  const { stats, state, courses, catalog, patch, setView, dismissBackupReminder, openAdd, setStudipOpen } = useTracker();
+  const fresh = courses.length === 0;
+  const small = useMediaQuery("(max-width: 639px)");
   const plan = planningSemester();
   const target = parseFloat(state.targetGrade);
 
@@ -51,6 +59,24 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
 
   const remainingCounted = TOTAL_REQUIRED - stats.completed;
 
+  // Completed (passed, counted) credits per semester, for the bars under the GPA line.
+  const semesterBars = useMemo(() => {
+    const by = new Map<string, number>();
+    courses.forEach((c) => {
+      if (c.hypothetical || c.status !== "completed" || isFail(c) || c.category === "additional" || c.semester === "Unscheduled") return;
+      by.set(c.semester, (by.get(c.semester) || 0) + c.ects);
+    });
+    return [...by.entries()].map(([semester, ects]) => ({ semester, ects })).sort((a, b) => compareSemesters(a.semester, b.semester));
+  }, [courses]);
+
+  if (fresh)
+    return (
+      <div className="grid grid-cols-1 gap-5">
+        <Welcome onSync={() => setStudipOpen(true)} onImport={onImport} onAdd={() => openAdd()} />
+        <OpenPanel />
+      </div>
+    );
+
   return (
     <div className="grid grid-cols-1 gap-5">
       {/* Hero */}
@@ -58,11 +84,11 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
         <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
         <div className="relative grid items-center gap-6 md:grid-cols-[auto_1fr]">
           <div className="mx-auto">
-            <ProgressRing total={TOTAL_REQUIRED} completed={stats.completed} inProgress={stats.inProgress} planned={stats.planned} />
+            <ProgressRing total={TOTAL_REQUIRED} completed={stats.completed} inProgress={stats.inProgress} planned={stats.planned} size={small ? 168 : 220} stroke={small ? 15 : 18} />
           </div>
           <div className="min-w-0">
             <div className="eyebrow mb-1">Master's progress</div>
-            <h2 className="font-serif text-[28px] leading-tight font-semibold tracking-tight sm:text-[34px]">
+            <h2 className="font-serif text-display leading-tight font-semibold tracking-tight sm:text-display-lg">
               {stats.graduationReady ? (
                 <>All requirements met. Time to graduate.</>
               ) : remainingCounted <= 0 ? (
@@ -141,7 +167,7 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
           value={
             <>
               <span className="num">{termEcts}</span>
-              <span className="text-[15px] text-muted"> ECTS</span>
+              <span className="text-title-sm text-muted"> ECTS</span>
             </>
           }
           foot={termEcts ? `about ${Math.round(termHours)} h per week` : "Nothing scheduled yet"}
@@ -154,7 +180,7 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
             stats.daysLeft !== null ? (
               <>
                 <span className="num">{Math.abs(stats.daysLeft)}</span>
-                <span className="text-[15px] text-muted">{stats.daysLeft === 1 || stats.daysLeft === -1 ? " day" : " days"}{stats.daysLeft < 0 ? " ago" : ""}</span>
+                <span className="text-title-sm text-muted">{stats.daysLeft === 1 || stats.daysLeft === -1 ? " day" : " days"}{stats.daysLeft < 0 ? " ago" : ""}</span>
               </>
             ) : (
               "-"
@@ -166,7 +192,7 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
               type="date"
               value={state.graduationDate}
               onChange={(e) => patch({ graduationDate: e.target.value })}
-              className="w-full bg-transparent text-[12px] text-muted outline-none"
+              className="w-full bg-transparent text-meta text-muted outline-none"
               aria-label="Graduation date"
             />
           }
@@ -267,11 +293,11 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
       {/* Charts */}
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-5">
         <div className="card p-5 lg:col-span-3">
-          <SectionTitle eyebrow="Performance" title="GPA by semester" />
-          {stats.semesterGpa.length ? (
-            <GpaTrend points={stats.semesterGpa} target={target >= 1 && target <= 4 ? target : undefined} />
+          <SectionTitle eyebrow="Performance" title="Credits and GPA by semester" />
+          {semesterBars.length ? (
+            <SemesterChart bars={semesterBars} gpa={stats.semesterGpa} target={target >= 1 && target <= 4 ? target : undefined} />
           ) : (
-            <p className="py-8 text-center text-[13.5px] text-muted">Grades will draw a trend line here.</p>
+            <p className="py-8 text-center text-body-sm text-muted">Completed courses will show up here per semester.</p>
           )}
         </div>
         <div className="card p-5 lg:col-span-2">
@@ -281,7 +307,7 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
       </section>
 
       {stats.compulsoryDone.length > 0 && (
-        <div className="flex items-center gap-2 px-1 text-[12.5px] text-muted">
+        <div className="flex items-center gap-2 px-1 text-meta text-muted">
           <ShieldCheck size={14} className="text-accent" />
           {stats.compulsoryDone.length} of {catalog.compulsory.length} compulsory modules completed.
         </div>
@@ -293,16 +319,16 @@ export function Overview({ onBackup }: { onBackup: () => void }) {
 function Legend({ color, label, value, hatch }: { color: string; label: string; value: number; hatch?: boolean }) {
   return (
     <div>
-      <div className="flex items-center gap-2 text-[12px] text-muted">
+      <div className="flex items-center gap-2 text-meta text-muted">
         <span
           className="h-2.5 w-2.5 rounded-full"
           style={{ background: hatch ? `repeating-linear-gradient(135deg, ${color} 0 2px, transparent 2px 4px)` : color, border: hatch ? `1px solid ${color}` : undefined }}
         />
         {label}
       </div>
-      <div className="num mt-0.5 text-[20px] font-semibold">
+      <div className="num mt-0.5 text-display-sm font-semibold">
         {value}
-        <span className="ml-1 text-[12px] font-normal text-muted">ECTS</span>
+        <span className="ml-1 text-meta font-normal text-muted">ECTS</span>
       </div>
     </div>
   );
@@ -313,10 +339,10 @@ function Kpi({ icon, label, value, foot, warn }: { icon: ReactNode; label: strin
     <div className={cx("card flex flex-col p-4", warn && "!border-warn/60")}>
       <div className="flex items-center gap-2 text-muted">
         <span className={cx("flex h-7 w-7 items-center justify-center rounded-lg", warn ? "bg-warn-soft text-warn" : "bg-accent-soft text-accent")}>{icon}</span>
-        <span className="truncate text-[12.5px] font-medium">{label}</span>
+        <span className="truncate text-meta font-medium">{label}</span>
       </div>
-      <div className="num mt-3 text-[28px] leading-none font-semibold tracking-tight">{value}</div>
-      {foot && <div className="mt-2 text-[12px] leading-snug text-muted">{foot}</div>}
+      <div className="num mt-3 text-display leading-none font-semibold tracking-tight">{value}</div>
+      {foot && <div className="mt-2 text-meta leading-snug text-muted">{foot}</div>}
     </div>
   );
 }
@@ -330,8 +356,12 @@ type AlertItem = {
   onDismiss?: () => void;
 };
 
+const SEVERITY: AlertItem["tone"][] = ["danger", "warn", "muted", "accent"];
+
+/** All alerts in one panel, most severe first; the first two show, the rest on demand. */
 function Alerts({ items }: { items: (AlertItem | false | null | undefined)[] }) {
-  const list = items.filter((x): x is AlertItem => !!x);
+  const [expanded, setExpanded] = useState(false);
+  const list = items.filter((x): x is AlertItem => !!x).sort((a, b) => SEVERITY.indexOf(a.tone) - SEVERITY.indexOf(b.tone));
   if (!list.length) return null;
   const tones = {
     warn: "bg-warn-soft text-warn",
@@ -339,21 +369,102 @@ function Alerts({ items }: { items: (AlertItem | false | null | undefined)[] }) 
     muted: "bg-ink/5 text-muted",
     accent: "bg-accent-soft text-accent",
   };
+  const dot = { warn: "bg-warn", danger: "bg-danger", muted: "bg-faint", accent: "bg-accent" };
+  const counts = SEVERITY.map((t) => [t, list.filter((a) => a.tone === t).length] as const).filter(([, n]) => n > 0);
+  const onlyGood = list.every((a) => a.tone === "accent");
+  const shown = expanded ? list : list.slice(0, 2);
   return (
-    <section className="grid grid-cols-1 gap-2">
-      {list.map((a) => (
-        <div key={a.key} className="rise flex items-center gap-3 rounded-2xl border border-line bg-panel py-2.5 pr-2.5 pl-3">
-          <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl", tones[a.tone])}>{a.icon}</span>
-          <div className="min-w-0 flex-1 text-[13.5px] leading-snug">{a.text}</div>
-          {a.action}
-          {a.onDismiss && (
-            <button onClick={a.onDismiss} aria-label="Dismiss" className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-faint hover:bg-ink/5 hover:text-ink">
-              <X size={15} />
-            </button>
-          )}
-        </div>
-      ))}
+    <section className="card overflow-hidden" aria-label={onlyGood ? "Updates" : "Needs attention"}>
+      <div className="flex items-center gap-3 border-b border-line px-4 py-2.5">
+        <h2 className="font-serif text-title-sm font-semibold">{onlyGood ? "Updates" : "Needs attention"}</h2>
+        <span className="flex items-center gap-1.5" aria-hidden="true">
+          {counts.map(([t, n]) => (
+            <span key={t} className="inline-flex items-center gap-1 text-caption text-muted">
+              <span className={cx("h-2 w-2 rounded-full", dot[t])} />
+              <span className="num">{n}</span>
+            </span>
+          ))}
+        </span>
+        {list.length > 2 && (
+          <button onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} className="ml-auto inline-flex cursor-pointer items-center gap-1 text-meta font-medium text-accent hover:underline">
+            {expanded ? "Show less" : `Show all ${list.length}`}
+            <ChevronDown size={14} className={cx("transition", expanded && "rotate-180")} />
+          </button>
+        )}
+      </div>
+      <ul className="divide-y divide-line">
+        {shown.map((a) => (
+          <li key={a.key} className="rise flex items-center gap-3 py-2.5 pr-2.5 pl-4">
+            <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl", tones[a.tone])}>{a.icon}</span>
+            <div className="min-w-0 flex-1 text-body-sm leading-snug">{a.text}</div>
+            {a.action}
+            {a.onDismiss && (
+              <button onClick={a.onDismiss} aria-label="Dismiss" className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-faint hover:bg-ink/5 hover:text-ink">
+                <X size={15} />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
     </section>
+  );
+}
+
+/** First visit: three ways to get courses in, instead of an empty dashboard. */
+function Welcome({ onSync, onImport, onAdd }: { onSync: () => void; onImport: () => void; onAdd: () => void }) {
+  const steps = [
+    { icon: <RefreshCw size={18} />, title: "Sync from StudIP", body: "Copy your StuMS grades page and paste it. Finished modules and grades come in by module code.", cta: "Start sync", run: onSync, primary: true },
+    { icon: <Upload size={18} />, title: "Import a file", body: "Load a CSV file, for example one exported from this tracker or saved from Excel.", cta: "Choose file", run: onImport },
+    { icon: <Plus size={18} />, title: "Add courses yourself", body: "Search the module catalog by code, title or lecturer.", cta: "Add a course", run: onAdd },
+  ];
+  return (
+    <section className="card relative overflow-hidden p-5 sm:p-7" aria-labelledby="welcome-title">
+      <div className="grid items-center gap-6 md:grid-cols-[1fr_220px]">
+        <div>
+          <div className="eyebrow mb-1">Welcome</div>
+          <h2 id="welcome-title" className="font-serif text-display font-semibold tracking-tight">
+            Let's map out your master's
+          </h2>
+          <p className="mt-2 max-w-xl text-body-sm text-muted">
+            Track all 120 ECTS, your GPA and what's left to graduate. Everything stays in this browser. Pick how to start:
+          </p>
+        </div>
+        <WelcomeArt />
+      </div>
+      <ol className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+        {steps.map((st, i) => (
+          <li key={st.title} className="flex flex-col rounded-2xl border border-line bg-panel-2 p-4">
+            <div className="flex items-center gap-2">
+              <span className="num flex h-6 w-6 items-center justify-center rounded-full bg-accent-soft text-caption font-bold text-accent">{i + 1}</span>
+              <span className="text-accent">{st.icon}</span>
+            </div>
+            <h3 className="mt-3 font-semibold">{st.title}</h3>
+            <p className="mt-1 flex-1 text-meta text-muted">{st.body}</p>
+            <Button size="sm" variant={st.primary ? "primary" : "outline"} className="mt-3 self-start" onClick={st.run}>
+              {st.cta}
+            </Button>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function WelcomeArt() {
+  return (
+    <svg viewBox="0 0 220 150" className="mx-auto hidden w-full max-w-[220px] md:block" aria-hidden="true">
+      <rect x="18" y="26" width="150" height="104" rx="16" fill="var(--panel-2)" stroke="var(--line)" />
+      <rect x="44" y="12" width="150" height="104" rx="16" fill="var(--panel)" stroke="var(--line-strong)" />
+      <circle cx="88" cy="64" r="26" fill="none" stroke="var(--line)" strokeWidth="9" />
+      <path d="M88 38a26 26 0 0 1 24 36" fill="none" stroke="var(--accent)" strokeWidth="9" strokeLinecap="round" />
+      <path d="M112 74a26 26 0 0 1-9 9" fill="none" stroke="var(--warn)" strokeWidth="9" strokeLinecap="round" />
+      <rect x="128" y="44" width="48" height="7" rx="3.5" fill="var(--ink)" opacity="0.8" />
+      <rect x="128" y="58" width="34" height="7" rx="3.5" fill="var(--ink)" opacity="0.25" />
+      <rect x="128" y="76" width="44" height="10" rx="5" fill="var(--accent-soft)" />
+      <path d="M176 112l14-8 14 8-14 8z" fill="var(--ink)" />
+      <path d="M182 116v8c4 3 12 3 16 0v-8" fill="none" stroke="var(--ink)" strokeWidth="3" />
+      <path d="M204 112v12" stroke="var(--warn)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -379,14 +490,14 @@ function CategoryCard({ cat }: { cat: CategoryStats }) {
         <CategoryDot id={cat.id} size={10} />
         <span className="flex-1 truncate font-semibold">{cat.name}</span>
         {done && <ShieldCheck size={16} className="text-accent" />}
-        {cat.gpa && <span className="num whitespace-nowrap rounded-md bg-ink/5 px-1.5 py-0.5 text-[11.5px] font-semibold text-muted">⌀ {cat.gpa}</span>}
+        {cat.gpa && <span className="num whitespace-nowrap rounded-md bg-ink/5 px-1.5 py-0.5 text-caption font-semibold text-muted">⌀ {cat.gpa}</span>}
       </div>
       {req > 0 ? (
         <>
           <div className="mt-3 flex items-baseline gap-1">
-            <span className="num text-[26px] leading-none font-semibold">{cat.completed}</span>
-            <span className="num text-[13px] text-muted">/ {req} ECTS</span>
-            {cat.remaining > 0 && <span className="ml-auto text-[12px] text-warn">{cat.remaining} unplanned</span>}
+            <span className="num text-display leading-none font-semibold">{cat.completed}</span>
+            <span className="num text-body-sm text-muted">/ {req} ECTS</span>
+            {cat.remaining > 0 && <span className="ml-auto text-meta text-warn">{cat.remaining} unplanned</span>}
           </div>
           <div className="mt-3">
             <Bar
@@ -399,12 +510,12 @@ function CategoryCard({ cat }: { cat: CategoryStats }) {
           </div>
         </>
       ) : (
-        <div className="mt-3 text-[13px] text-muted">
-          <span className="num text-[22px] font-semibold text-ink">{cat.completed + cat.inProgress + cat.planned}</span> ECTS tracked
+        <div className="mt-3 text-body-sm text-muted">
+          <span className="num text-display-sm font-semibold text-ink">{cat.completed + cat.inProgress + cat.planned}</span> ECTS tracked
           {cat.excludedFromTotal ? ", not counted toward 120" : ""}
         </div>
       )}
-      <div className="mt-3 flex items-center justify-between text-[12px] text-muted">
+      <div className="mt-3 flex items-center justify-between text-meta text-muted">
         <span>
           {cat.items.length} course{cat.items.length === 1 ? "" : "s"}
         </span>
