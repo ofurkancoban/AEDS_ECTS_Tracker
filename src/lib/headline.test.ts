@@ -23,19 +23,19 @@ const h = (list: Course[]) => headline(computeStats(list, cat, STATS_OPTS));
 describe("stage headline", () => {
   it("climbs every 3 modules (18 ECTS) up to 90", () => {
     const at = (n: number) => h(modules(n)).text;
-    expect(h([]).text).toBe("Ready to start: 120 ECTS ahead");
-    expect(at(1)).toBe("Off to a good start: 6 of 120 ECTS done");
-    expect(at(2)).toBe("Off to a good start: 12 of 120 ECTS done");
-    expect(at(3)).toBe("Finding your rhythm: 18 of 120 ECTS done");
-    expect(at(5)).toBe("Finding your rhythm: 30 of 120 ECTS done");
-    expect(at(6)).toBe("Making progress: 36 of 120 ECTS done");
-    expect(at(8)).toBe("Making progress: 48 of 120 ECTS done");
-    expect(at(9)).toBe("Past the halfway mark: 54 of 120 ECTS done");
-    expect(at(10)).toBe("Past the halfway mark: 60 of 120 ECTS done");
-    expect(at(11)).toBe("Past the halfway mark: 66 of 120 ECTS done");
-    expect(at(12)).toBe("Final stretch: 72 of 120 ECTS done");
-    expect(at(14)).toBe("Final stretch: 84 of 120 ECTS done");
-    expect(at(15)).toBe("Only your thesis is left");
+    expect(h([]).text).toBe("Starting out");
+    expect(at(1)).toBe("Good start: 6 / 120 ECTS");
+    expect(at(2)).toBe("Good start: 12 / 120 ECTS");
+    expect(at(3)).toBe("Getting going: 18 / 120 ECTS");
+    expect(at(5)).toBe("Getting going: 30 / 120 ECTS");
+    expect(at(6)).toBe("On track: 36 / 120 ECTS");
+    expect(at(8)).toBe("On track: 48 / 120 ECTS");
+    expect(at(9)).toBe("Past halfway: 54 / 120 ECTS");
+    expect(at(10)).toBe("Past halfway: 60 / 120 ECTS");
+    expect(at(11)).toBe("Past halfway: 66 / 120 ECTS");
+    expect(at(12)).toBe("Final stretch: 72 / 120 ECTS");
+    expect(at(14)).toBe("Final stretch: 84 / 120 ECTS");
+    expect(at(15)).toBe("Thesis time");
   });
 
   it("counts completed modules only, not running or planned ones", () => {
@@ -46,13 +46,13 @@ describe("stage headline", () => {
   it("doesn't count the thesis or credits beyond a category toward the stage", () => {
     const thesisOnly = [course("mam", "thesis", "SoSe26", "completed", "1.7")];
     expect(moduleEcts(computeStats(thesisOnly, cat, STATS_OPTS))).toBe(0);
-    expect(h(thesisOnly).text).toBe("Off to a good start: 30 of 120 ECTS done");
+    expect(h(thesisOnly).text).toBe("Good start: 30 / 120 ECTS");
     const tooMuchEcon = ["wir821", "wir873", "wir874", "wir876", "wir878", "wir893", "wir901", "wir890"].map((c) => course(c, "economics", "SoSe25", "completed", "2.0"));
-    expect(h(tooMuchEcon).text).toBe("Making progress: 36 of 120 ECTS done"); // 48 ECTS of Economics, 36 count
+    expect(h(tooMuchEcon).text).toBe("On track: 36 / 120 ECTS"); // 48 ECTS of Economics, 36 count
   });
 
   it("ends with the graduation message", () => {
     const all = [...modules(15), course("mam", "thesis", "SoSe26", "completed", "1.7")];
-    expect(h(all)).toMatchObject({ stage: "done", text: "All requirements met. Time to graduate." });
+    expect(h(all)).toMatchObject({ stage: "done", text: "Ready to graduate" });
   });
 });

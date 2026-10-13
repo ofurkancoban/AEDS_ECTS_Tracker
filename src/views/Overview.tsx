@@ -105,7 +105,7 @@ export function Overview({ onBackup, onImport }: { onBackup: () => void; onImpor
             <h2 className="font-serif text-display leading-tight font-semibold tracking-tight sm:text-display-lg">
               {head.lead ? (
                 <>
-                  <span className="text-accent">{head.lead}:</span> <span className="num">{stats.completed}</span> of {TOTAL_REQUIRED} ECTS done
+                  <span className="text-accent">{head.lead}:</span> <span className="num">{stats.completed}</span> / {TOTAL_REQUIRED} ECTS
                 </>
               ) : (
                 head.text

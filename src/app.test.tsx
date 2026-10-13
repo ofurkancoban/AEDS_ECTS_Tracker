@@ -70,7 +70,7 @@ describe("navigation", () => {
     seed(sample());
     await renderApp();
     expect(screen.queryByRole("region", { name: "Let's map out your master's" })).toBeNull();
-    expect(screen.getByText(/of 120 ECTS done/)).toBeTruthy();
+    expect(screen.getAllByText(/\/ 120 ECTS/).length).toBeGreaterThan(0);
     expect(screen.getByRole("img", { name: "Credits and GPA by semester" })).toBeTruthy();
   });
 
@@ -432,7 +432,7 @@ describe("robustness", () => {
       JSON.stringify({ courses: [{ id: "a", name: "wir821 - International Trade, Production and Change", category: "economics", ects: 6, status: "completed", grade: "2,3" }, { foo: 1 }, null, "x"] }),
     );
     await renderApp();
-    expect(screen.getByText(/of 120 ECTS done/)).toBeTruthy();
+    expect(screen.getAllByText(/\/ 120 ECTS/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("2.30").length).toBeGreaterThan(0);
   });
 
@@ -653,7 +653,7 @@ describe("progress headline", () => {
   it("says how much is left, what is already covered and what is not in the plan", async () => {
     seed(sample());
     await renderApp();
-    expect(screen.getByRole("heading", { level: 2, name: /ECTS done/ }).textContent).toBe("Finding your rhythm: 18 of 120 ECTS done");
+    expect(screen.getByRole("heading", { level: 2, name: /\/ 120 ECTS/ }).textContent).toBe("Getting going: 18 / 120 ECTS");
     expect(status()).toBe(
       "102 ECTS left. 6 of them are already running or planned. Not in your plan yet: Economics 18 ECTS, Empirical Methods 18 ECTS, Data Science 12 ECTS, Specialization 18 ECTS, Thesis 30 ECTS. Plan it",
     );
@@ -682,7 +682,7 @@ describe("progress headline", () => {
     cleanup();
     seed([course("mam", "thesis", "SoSe27", "planned")]);
     await renderApp();
-    expect(screen.getByText("Ready to start: 120 ECTS ahead")).toBeTruthy();
+    expect(screen.getByText("Starting out")).toBeTruthy();
     expect(status()).toMatch(/^120 ECTS left\. 30 of them are already running or planned\. Not in your plan yet: Economics 36 ECTS/);
   });
 });

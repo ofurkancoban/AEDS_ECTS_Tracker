@@ -12,10 +12,10 @@ export const STEP_ECTS = 18; // 3 modules
 
 /** Rungs below the thesis: from this many completed module ECTS on, this lead. */
 export const RUNGS: { from: number; stage: Stage; lead: string }[] = [
-  { from: 6, stage: "start", lead: "Off to a good start" }, // 1-2 modules
-  { from: 18, stage: "rhythm", lead: "Finding your rhythm" }, // 3-5
-  { from: 36, stage: "progress", lead: "Making progress" }, // 6-8
-  { from: 54, stage: "halfway", lead: "Past the halfway mark" }, // 9-11
+  { from: 6, stage: "start", lead: "Good start" }, // 1-2 modules
+  { from: 18, stage: "rhythm", lead: "Getting going" }, // 3-5
+  { from: 36, stage: "progress", lead: "On track" }, // 6-8
+  { from: 54, stage: "halfway", lead: "Past halfway" }, // 9-11
   { from: 72, stage: "final", lead: "Final stretch" }, // 12-14
 ];
 
@@ -36,12 +36,12 @@ export function moduleEcts(stats: Stats): number {
 export function headline(stats: Stats): Headline {
   const mods = moduleEcts(stats);
   const done = stats.completed;
-  const of = `${done} of ${TOTAL_REQUIRED} ECTS done`;
+  const of = `${done} / ${TOTAL_REQUIRED} ECTS`;
   const make = (stage: Stage, lead: string, text: string): Headline => ({ stage, lead, text, moduleEcts: mods });
-  if (stats.graduationReady) return make("done", "", "All requirements met. Time to graduate.");
-  if (done >= TOTAL_REQUIRED) return make("loose-ends", "", `${TOTAL_REQUIRED} ECTS reached, a few loose ends left.`);
-  if (mods >= MODULE_ECTS) return make("thesis", "", "Only your thesis is left");
-  if (done === 0) return make("ready", "", `Ready to start: ${TOTAL_REQUIRED} ECTS ahead`);
+  if (stats.graduationReady) return make("done", "", "Ready to graduate");
+  if (done >= TOTAL_REQUIRED) return make("loose-ends", "", `${TOTAL_REQUIRED} ECTS reached`);
+  if (mods >= MODULE_ECTS) return make("thesis", "", "Thesis time");
+  if (done === 0) return make("ready", "", "Starting out");
   // Completed credits but no module yet (e.g. only the thesis): the first rung.
   const rung = [...RUNGS].reverse().find((r) => mods >= r.from) || RUNGS[0];
   return make(rung.stage, rung.lead, `${rung.lead}: ${of}`);
