@@ -346,23 +346,29 @@ function Shell() {
           <p className="text-meta text-muted">{current.blurb}</p>
         </div>
 
+        {/* On a phone the links used to share the text's row and squeezed it
+            into a column a word or two wide; there they now go under it. */}
         {isPreview() && !previewDismissed && (
-          <div role="note" className="rise mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-2.5 text-body-sm text-accent">
-            <Sparkles size={15} className="shrink-0" />
-            <span className="min-w-0 flex-1">You're trying the new design. Your courses are shared with the classic version, so you can switch back any time.</span>
-            <a href={classicUrl()} className="font-medium underline underline-offset-2">
-              Back to classic
-            </a>
-            <a
-              href={ISSUES_URL}
-              onClick={(e) => (e.currentTarget.href = issueUrl({ kind: "feedback" }))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium underline underline-offset-2"
-            >
-              Send feedback
-            </a>
-            <IconButton label="Hide this note" className="h-8 w-8 !text-accent" onClick={dismissPreview}>
+          <div role="note" className="rise mb-4 flex items-start gap-3 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-2.5 text-body-sm text-accent sm:items-center">
+            <Sparkles size={15} className="mt-0.5 shrink-0 sm:mt-0" />
+            <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3">
+              <span className="block sm:min-w-0 sm:flex-1">You're trying the new design. Your courses are shared with the classic version, so you can switch back any time.</span>
+              <span className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 sm:mt-0 sm:shrink-0">
+                <a href={classicUrl()} className="font-medium underline underline-offset-2">
+                  Back to classic
+                </a>
+                <a
+                  href={ISSUES_URL}
+                  onClick={(e) => (e.currentTarget.href = issueUrl({ kind: "feedback" }))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2"
+                >
+                  Send feedback
+                </a>
+              </span>
+            </div>
+            <IconButton label="Hide this note" className="-my-1 h-8 w-8 shrink-0 !text-accent" onClick={dismissPreview}>
               <X size={15} />
             </IconButton>
           </div>

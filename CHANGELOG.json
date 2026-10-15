@@ -40,7 +40,8 @@
       "Automatic file backup (Chrome and Edge on a computer): choose a file once, for example in your iCloud Drive, OneDrive or Dropbox folder, and it is updated a few seconds after every change. On iPhone, 'Save backup to Files' puts a copy in iCloud Drive in one tap",
       "Found a problem? 'Report a problem' in the footer (and on the error screen) opens a pre-filled GitHub issue with technical details only, never your courses or grades",
       "Credits beyond a category's requirement (for example a seventh Economics elective) no longer count toward the 120 ECTS or fill another category's gap; the tracker marks them '+6 over' and offers to move a course to Specialization when it still needs credits. 'Ready to graduate' now also checks every category's minimum",
-      "The progress headline now climbs with you every three modules (Good start, Getting going, On track, Past halfway, Final stretch, Thesis time), with how much is left and what isn't planned yet underneath. You don't have to plan everything: the tracker only warns when the credits not planned yet can't fit before your graduation date, or when a compulsory module that isn't in your plan runs next semester and only once a year"
+      "The progress headline now climbs with you every three modules (Good start, Getting going, On track, Past halfway, Final stretch, Thesis time), with how much is left and what isn't planned yet underneath. You don't have to plan everything: the tracker only warns when the credits not planned yet can't fit before your graduation date, or when a compulsory module that isn't in your plan runs next semester and only once a year",
+      "On a phone, the 'You're trying the new design' note no longer stretches into a tall, narrow column: its links now sit under the text"
     ]
   },
   {
