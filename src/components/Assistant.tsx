@@ -1,8 +1,9 @@
-import { ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, MessageCircle, Plus, RotateCw, Search, Square, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowUp, BookOpen, Check, ChevronDown, Copy, ExternalLink, Info, MessageCircle, Plus, RotateCw, Search, ShieldCheck, Square, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AEDS_RAG_WEB,
+  CONTEXT_PRIVACY,
   GREETING,
   STAGE_LABELS,
   SUGGESTIONS,
@@ -14,6 +15,8 @@ import {
   compactPassages,
   escapeHtml,
   formatAnswer,
+  giveContextConsent,
+  hasContextConsent,
   loadIncludeCourses,
   loadMessages,
   saveIncludeCourses,
@@ -76,6 +79,9 @@ export default function Assistant() {
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []);
   const [confirmClear, setConfirmClear] = useState(false);
+  // Sharing the course list: a one-time notice before it is first turned on, and an info popover.
+  const [askConsent, setAskConsent] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   // Closed: not just transparent but unreachable by keyboard and screen readers
@@ -308,11 +314,16 @@ export default function Assistant() {
         </div>
 
         <div className="shrink-0 border-t border-line bg-panel px-3 pt-2 pb-[calc(10px+env(safe-area-inset-bottom))]">
-          <label data-tour="assistant-context" className="mb-1.5 flex w-fit cursor-pointer items-center gap-2 text-caption text-muted select-none">
+          <div className="mb-1.5 flex items-center gap-1">
+          <label data-tour="assistant-context" className="flex w-fit cursor-pointer items-center gap-2 text-caption text-muted select-none">
             <input
               type="checkbox"
               checked={include}
               onChange={(e) => {
+                if (e.target.checked && !hasContextConsent()) {
+                  setAskConsent(true);
+                  return;
+                }
                 setInclude(e.target.checked);
                 saveIncludeCourses(e.target.checked);
               }}
@@ -320,6 +331,23 @@ export default function Assistant() {
             />
             Consider my course list
           </label>
+          <button
+            type="button"
+            onClick={() => setShowPrivacy((v) => !v)}
+            aria-expanded={showPrivacy}
+            aria-controls="assistant-privacy"
+            aria-label="What sharing my course list means"
+            title="What sharing my course list means"
+            className="-ml-0.5 cursor-pointer rounded-full p-1 text-faint hover:text-ink"
+          >
+            <Info size={13} />
+          </button>
+          </div>
+          {showPrivacy && (
+            <div id="assistant-privacy" role="region" aria-label="About sharing your course list" className="pop mb-2 rounded-xl border border-line bg-panel-2 p-3 text-caption leading-relaxed text-muted">
+              <PrivacyPoints />
+            </div>
+          )}
           <div className="flex items-end gap-1.5 rounded-[22px] border border-line bg-paper py-1.5 pr-1.5 pl-4 transition focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_15%,transparent)]">
             <textarea
               ref={inputRef}
@@ -356,6 +384,41 @@ export default function Assistant() {
             )}
           </div>
         </div>
+
+        {askConsent && (
+          <div className="fade absolute inset-0 z-20 flex items-end justify-center bg-[#1c2333]/45 p-3 sm:items-center">
+            <div role="alertdialog" aria-modal="true" aria-labelledby="consent-title" className="pop sheet w-full max-w-[340px] rounded-2xl bg-panel p-4 shadow-[var(--shadow-lg)]">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                  <ShieldCheck size={17} />
+                </span>
+                <h3 id="consent-title" className="font-serif text-title-sm font-semibold">
+                  Share your course list?
+                </h3>
+              </div>
+              <div className="mt-3 text-meta leading-relaxed text-muted">
+                <PrivacyPoints />
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <button onClick={() => setAskConsent(false)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-body-sm">
+                  Not now
+                </button>
+                <button
+                  autoFocus
+                  onClick={() => {
+                    giveContextConsent();
+                    setInclude(true);
+                    saveIncludeCourses(true);
+                    setAskConsent(false);
+                  }}
+                  className="cursor-pointer rounded-lg bg-accent px-3 py-1.5 text-body-sm font-semibold text-white dark:text-paper"
+                >
+                  Share my course list
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {confirmClear && (
           <div className="fade absolute inset-0 z-20 flex items-center justify-center bg-[#1c2333]/45 p-5">
@@ -600,5 +663,18 @@ function ModuleCard({ code, modules, onClose }: { code: string; modules: Modules
         </button>
       </div>
     </div>
+  );
+}
+
+function PrivacyPoints() {
+  return (
+    <ul className="grid gap-1.5">
+      {[CONTEXT_PRIVACY.sent, CONTEXT_PRIVACY.stored, CONTEXT_PRIVACY.model, CONTEXT_PRIVACY.off].map((t) => (
+        <li key={t} className="flex gap-2">
+          <span aria-hidden="true" className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-accent" />
+          <span>{t}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

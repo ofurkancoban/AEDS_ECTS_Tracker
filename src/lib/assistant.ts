@@ -12,6 +12,15 @@ export const AEDS_RAG_WEB = "https://ofurkancoban.github.io/AEDS_RAG_Assistant/"
 export const GREETING =
   "Hey! Think of me as your AEDS know-it-all, ask me about admission, deadlines, courses, or exams, and let's figure it out together.";
 
+/** What sharing the course list means, shown before it is first turned on and behind the info button. */
+export const CONTEXT_PRIVACY = {
+  sent: "Sent with each question: your module codes and their status, your grade average per category and your target GPA. Never your name, email or student number.",
+  stored:
+    "Kept on the assistant's server together with your question: in the chat history for 90 days and in the question log, used to improve answers, for about 13 months.",
+  model: "The answer is written by an external AI model (via OpenRouter), whose provider may keep what it receives.",
+  off: "You can untick it any time; your questions are then sent on their own.",
+};
+
 export const SUGGESTIONS = ["How many ECTS do I need to graduate?", "Which courses should I take next semester?"];
 
 export interface ChatMessage {
@@ -35,6 +44,7 @@ const K = {
   thread: "aedsRagThreadId",
   messages: "aedsRagMessages",
   include: "aedsRagIncludeCourses",
+  consent: "aedsRagContextConsent",
 };
 
 function get(k: string): string | null {
@@ -64,7 +74,11 @@ export function loadMessages(): ChatMessage[] {
 }
 // Answers still arriving are not saved; an interrupted one is kept with its flag.
 export const saveMessages = (m: ChatMessage[]) => set(K.messages, JSON.stringify(m.filter((x) => !x.streaming).map(({ stage: _s, ...x }) => x)));
-export const loadIncludeCourses = () => get(K.include) === "1";
+// Sharing the course list needs the student to have seen what that means
+// (CONTEXT_PRIVACY). Turned on before that notice existed: off until confirmed.
+export const loadIncludeCourses = () => get(K.include) === "1" && hasContextConsent();
+export const hasContextConsent = () => get(K.consent) === "1";
+export const giveContextConsent = () => set(K.consent, "1");
 export const saveIncludeCourses = (v: boolean) => set(K.include, v ? "1" : "0");
 export const loadThreadId = () => get(K.thread);
 export function clearConversation() {

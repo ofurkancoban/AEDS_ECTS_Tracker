@@ -110,6 +110,7 @@ describe("AEDS Assistant", () => {
   it("sends the course list only when the toggle is on", async () => {
     const { user, panel } = await openAssistant();
     await user.click(within(panel).getByLabelText("Consider my course list"));
+    await user.click(within(panel).getByRole("button", { name: "Share my course list" }));
     expect(localStorage.getItem("aedsRagIncludeCourses")).toBe("1");
     await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "What next?{Enter}");
     await waitFor(() => expect(requests.some((r) => r.url.endsWith("/chat/stream"))).toBe(true));
@@ -119,6 +120,53 @@ describe("AEDS Assistant", () => {
     expect(msg.endsWith("\n\nQuestion: What next?")).toBe(true);
     // The chat history shows only what the student typed.
     expect(within(panel).queryByText(/My ECTS Tracker progress/)).toBeNull();
+  });
+
+  it("explains what sharing the course list means before it is first turned on", async () => {
+    const { user, panel } = await openAssistant();
+    const box = within(panel).getByLabelText("Consider my course list") as HTMLInputElement;
+    await user.click(box);
+    const dlg = within(panel).getByRole("alertdialog", { name: "Share your course list?" });
+    expect(dlg.textContent).toMatch(/Never your name, email or student number/);
+    expect(dlg.textContent).toMatch(/90 days/);
+    expect(dlg.textContent).toMatch(/13 months/);
+    expect(dlg.textContent).toMatch(/OpenRouter/);
+    // Not now: stays off, and questions go out on their own.
+    await user.click(within(dlg).getByRole("button", { name: "Not now" }));
+    expect(box.checked).toBe(false);
+    expect(localStorage.getItem("aedsRagContextConsent")).toBeNull();
+    await user.type(within(panel).getByPlaceholderText(/Ask about the AEDS programme/), "What next?{Enter}");
+    await waitFor(() => expect(requests.some((r) => r.url.endsWith("/chat/stream"))).toBe(true));
+    expect((requests.find((r) => r.url.endsWith("/chat/stream"))!.body as { message: string }).message).toBe("What next?");
+
+    // Agreed once, later toggles don't ask again.
+    await user.click(box);
+    await user.click(within(panel).getByRole("button", { name: "Share my course list" }));
+    expect(box.checked).toBe(true);
+    expect(localStorage.getItem("aedsRagContextConsent")).toBe("1");
+    await user.click(box);
+    await user.click(box);
+    expect(within(panel).queryByRole("alertdialog")).toBeNull();
+    expect(box.checked).toBe(true);
+  });
+
+  it("turns off sharing that was on before the notice existed", async () => {
+    localStorage.setItem("aedsRagIncludeCourses", "1");
+    const { user, panel } = await openAssistant();
+    expect((within(panel).getByLabelText("Consider my course list") as HTMLInputElement).checked).toBe(false);
+    await user.click(within(panel).getByLabelText("Consider my course list"));
+    expect(within(panel).getByRole("alertdialog", { name: "Share your course list?" })).toBeTruthy();
+  });
+
+  it("explains sharing behind the info button at any time", async () => {
+    const { user, panel } = await openAssistant();
+    const info = within(panel).getByRole("button", { name: "What sharing my course list means" });
+    expect(info.getAttribute("aria-expanded")).toBe("false");
+    await user.click(info);
+    expect(info.getAttribute("aria-expanded")).toBe("true");
+    expect(within(panel).getByRole("region", { name: "About sharing your course list" }).textContent).toMatch(/question log/);
+    await user.click(info);
+    expect(within(panel).queryByRole("region", { name: "About sharing your course list" })).toBeNull();
   });
 
   it("does not send on Shift+Enter or an empty message", async () => {

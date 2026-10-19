@@ -141,7 +141,9 @@ test("assistant sends the course context only when asked", async ({ page }) => {
   await box.fill("Plain question");
   await box.press("Enter");
   await expect(panel.getByText("Noted.")).toBeVisible();
-  await panel.getByLabel("Consider my course list").check();
+  await panel.getByLabel("Consider my course list").click();
+  await panel.getByRole("button", { name: "Share my course list" }).click();
+  await expect(panel.getByLabel("Consider my course list")).toBeChecked();
   await box.fill("With context");
   await box.press("Enter");
   await expect(panel.getByText("Noted.")).toHaveCount(2);
