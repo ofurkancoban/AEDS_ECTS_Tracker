@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCourseContext, formatAnswer, withContext } from "./assistant";
+import { buildCourseContext, formatAnswer, needsCourseContext, withContext } from "./assistant";
 import { course } from "./testUtils";
 
 describe("buildCourseContext", () => {
@@ -43,6 +43,25 @@ describe("buildCourseContext", () => {
   it("prefixes the question only when there is context", () => {
     expect(withContext("Hi?", null)).toBe("Hi?");
     expect(withContext("Hi?", "CTX")).toBe("CTX\n\nQuestion: Hi?");
+  });
+});
+
+describe("needsCourseContext", () => {
+  it("sends the course list with questions about the student's studies", () => {
+    for (const q of [
+      "Which elective should I take next semester?",
+      "How many ECTS do I still need?",
+      "Can I write my thesis now?",
+      "Was fehlt mir noch?",
+      "Hangi dersleri almalıyım?",
+      "What is my GPA?",
+    ])
+      expect(needsCourseContext(q)).toBe(true);
+  });
+
+  it("leaves it out of general questions", () => {
+    for (const q of ["What's in the Mensa today?", "Who created you?", "When does the library open?", "How much is the broadcast fee?"])
+      expect(needsCourseContext(q)).toBe(false);
   });
 });
 

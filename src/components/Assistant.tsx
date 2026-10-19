@@ -23,6 +23,7 @@ import {
   saveMessages,
   sendFeedback,
   streamChat,
+  needsCourseContext,
   withContext,
   type ChatMessage,
 } from "../lib/assistant";
@@ -139,7 +140,7 @@ export default function Assistant() {
     setSending(true);
     stick.current = true;
     setMessages((m) => [...m, { role: "assistant", text: "", streaming: true, stage: "understanding" }]);
-    const message = include ? withContext(text, buildCourseContext(courses, state.targetGrade)) : text;
+    const message = include && needsCourseContext(text) ? withContext(text, buildCourseContext(courses, state.targetGrade)) : text;
     // Tokens arrive faster than the screen refreshes; render at most once per frame.
     let pending = "";
     let frame = 0;

@@ -3,7 +3,8 @@
     "version": "2026-10-19",
     "items": [
       "Before the AEDS Assistant first uses your course list, it now explains what is sent, how long it is kept and who sees it, and only shares it once you agree. The info button next to Consider my course list shows the same at any time. If you had it on before, it is off until you confirm",
-      "Mode and density buttons in Appearance now use the full width"
+      "Mode and density buttons in Appearance now use the full width",
+      "With Consider my course list on, the AEDS Assistant now gets your course list only with questions about your own studies (courses, ECTS, grades, thesis, planning). General questions, such as the canteen menu or deadlines, are sent without it"
     ]
   },
   {

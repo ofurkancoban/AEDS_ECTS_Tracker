@@ -383,6 +383,18 @@ export function buildCourseContext(courses: Course[], targetGradeRaw: string): s
   return result;
 }
 
+// A question that names the student or their studies gets the course list;
+// a general one ("What's in the Mensa today?", "When is the application
+// deadline?") goes without it. The list is about 1,500 characters the model
+// has to read on every question, and on general questions it only gave the
+// model something unrelated to latch on to. When in doubt it is sent.
+const PERSONAL =
+  /\b(i|i'm|i've|i'd|i'll|me|my|mine|myself|ich|mir|mich|mein\w*|ben|bana|beni|benim|bende)\b|gpa|grade|\bnote|ects|credit|cours|modul|\bders|elective|wahl|semester|thesis|master ?arbeit|tez|plan|remain|left|still|finish|graduat|abschlie|bitir|exam|prüfung|klausur|sınav|regist|anmeld|kayıt|next|nächst|should|eligible|recogni|anerkenn|transfer|requir|voraussetz|gerek|kalan|kaç/i;
+
+export function needsCourseContext(question: string): boolean {
+  return PERSONAL.test(question);
+}
+
 export function withContext(question: string, context: string | null): string {
   return context ? context + "\n\nQuestion: " + question : question;
 }
