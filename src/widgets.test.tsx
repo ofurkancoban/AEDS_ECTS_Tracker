@@ -130,7 +130,8 @@ describe("AEDS Assistant", () => {
     expect(dlg.textContent).toMatch(/Never your name, email or student number/);
     expect(dlg.textContent).toMatch(/90 days/);
     expect(dlg.textContent).toMatch(/13 months/);
-    expect(dlg.textContent).toMatch(/OpenRouter/);
+    expect(dlg.textContent).toMatch(/external AI model/);
+    expect(dlg.textContent).not.toMatch(/OpenRouter|untick/i);
     // Not now: stays off, and questions go out on their own.
     await user.click(within(dlg).getByRole("button", { name: "Not now" }));
     expect(box.checked).toBe(false);

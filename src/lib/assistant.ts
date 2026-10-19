@@ -17,8 +17,7 @@ export const CONTEXT_PRIVACY = {
   sent: "Sent with each question: your module codes and their status, your grade average per category and your target GPA. Never your name, email or student number.",
   stored:
     "Kept on the assistant's server together with your question: in the chat history for 90 days and in the question log, used to improve answers, for about 13 months.",
-  model: "The answer is written by an external AI model (via OpenRouter), whose provider may keep what it receives.",
-  off: "You can untick it any time; your questions are then sent on their own.",
+  model: "The answer is written by an external AI model, whose provider may keep what it receives.",
 };
 
 export const SUGGESTIONS = ["How many ECTS do I need to graduate?", "Which courses should I take next semester?"];

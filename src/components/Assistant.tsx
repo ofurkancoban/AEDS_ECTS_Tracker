@@ -669,7 +669,7 @@ function ModuleCard({ code, modules, onClose }: { code: string; modules: Modules
 function PrivacyPoints() {
   return (
     <ul className="grid gap-1.5">
-      {[CONTEXT_PRIVACY.sent, CONTEXT_PRIVACY.stored, CONTEXT_PRIVACY.model, CONTEXT_PRIVACY.off].map((t) => (
+      {[CONTEXT_PRIVACY.sent, CONTEXT_PRIVACY.stored, CONTEXT_PRIVACY.model].map((t) => (
         <li key={t} className="flex gap-2">
           <span aria-hidden="true" className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-accent" />
           <span>{t}</span>
