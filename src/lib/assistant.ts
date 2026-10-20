@@ -389,7 +389,7 @@ export function buildCourseContext(courses: Course[], targetGradeRaw: string): s
 // has to read on every question, and on general questions it only gave the
 // model something unrelated to latch on to. When in doubt it is sent.
 const PERSONAL =
-  /\b(i|i'm|i've|i'd|i'll|me|my|mine|myself|ich|mir|mich|mein\w*|ben|bana|beni|benim|bende)\b|gpa|grade|\bnote|ects|credit|cours|modul|\bders|elective|wahl|semester|thesis|master ?arbeit|tez|plan|remain|left|still|finish|graduat|abschlie|bitir|exam|prüfung|klausur|sınav|regist|anmeld|kayıt|next|nächst|should|eligible|recogni|anerkenn|transfer|requir|voraussetz|gerek|kalan|kaç/i;
+  /\b(i|i'm|i've|i'd|i'll|me|my|mine|myself|ich|mir|mich|mein\w*)\b|gpa|grade|\bnote|ects|credit|cours|modul|elective|wahl|semester|thesis|master ?arbeit|plan|remain|left|still|finish|graduat|abschlie|exam|prüfung|klausur|regist|anmeld|next|nächst|should|eligible|recogni|anerkenn|transfer|requir|voraussetz/i;
 
 export function needsCourseContext(question: string): boolean {
   return PERSONAL.test(question);

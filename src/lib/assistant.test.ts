@@ -53,7 +53,7 @@ describe("needsCourseContext", () => {
       "How many ECTS do I still need?",
       "Can I write my thesis now?",
       "Was fehlt mir noch?",
-      "Hangi dersleri almalıyım?",
+      "Welche Module sollte ich als Nächstes belegen?",
       "What is my GPA?",
     ])
       expect(needsCourseContext(q)).toBe(true);
